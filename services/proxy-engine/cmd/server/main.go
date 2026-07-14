@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
@@ -10,6 +10,7 @@ import (
 
 	"github.com/francisdavid7/nexus-proxy/services/proxy-engine/internal/auth"
 	"github.com/francisdavid7/nexus-proxy/services/proxy-engine/internal/config"
+	"github.com/francisdavid7/nexus-proxy/services/proxy-engine/internal/logging"
 	"github.com/francisdavid7/nexus-proxy/services/proxy-engine/internal/proxy"
 	"github.com/francisdavid7/nexus-proxy/services/proxy-engine/internal/server"
 )
@@ -17,8 +18,20 @@ import (
 func main() {
 	cfg, err := config.Load()
 	if err != nil {
-		log.Fatalf("configuration error: %v", err)
+		slog.Error(
+			"configuration failed",
+			slog.String("error", err.Error()),
+		)
+
+		os.Exit(1)
 	}
+
+	logger := logging.New(
+		cfg.Environment,
+		cfg.LogLevel,
+	).With(
+		slog.String("node_id", cfg.NodeID),
+	)
 
 	authenticator := auth.NewBasicAuthenticator(
 		cfg.Username,
@@ -30,12 +43,14 @@ func main() {
 	)
 
 	proxyHandler := proxy.NewHandler(
+		logger,
 		authenticator,
 		validator,
 		cfg.ConnectTimeout,
 	)
 
 	proxyServer := server.New(
+		logger,
 		cfg.Address(),
 		proxyHandler,
 		cfg.ReadTimeout,
@@ -59,17 +74,19 @@ func main() {
 
 	select {
 	case signalValue := <-shutdownSignals:
-		log.Printf(
-			"received shutdown signal: %s",
-			signalValue,
+		logger.Info(
+			"shutdown signal received",
+			slog.String("signal", signalValue.String()),
 		)
 
 	case serverError := <-serverErrors:
 		if serverError != nil {
-			log.Fatalf(
-				"proxy server failed: %v",
-				serverError,
+			logger.Error(
+				"proxy server failed",
+				slog.String("error", serverError.Error()),
 			)
+
+			os.Exit(1)
 		}
 	}
 
@@ -80,9 +97,13 @@ func main() {
 	defer cancel()
 
 	if err := proxyServer.Shutdown(shutdownContext); err != nil {
-		log.Printf(
-			"graceful shutdown failed: %v",
-			err,
+		logger.Error(
+			"graceful shutdown failed",
+			slog.String("error", err.Error()),
 		)
+
+		os.Exit(1)
 	}
+
+	logger.Info("proxy engine stopped successfully")
 }

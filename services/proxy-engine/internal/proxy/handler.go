@@ -3,7 +3,7 @@ package proxy
 import (
 	"errors"
 	"io"
-	"log"
+	"log/slog"
 	"net"
 	"net/http"
 	"strings"
@@ -13,6 +13,7 @@ import (
 )
 
 type Handler struct {
+	logger         *slog.Logger
 	authenticator  *auth.BasicAuthenticator
 	validator      *DestinationValidator
 	transport      *http.Transport
@@ -20,6 +21,7 @@ type Handler struct {
 }
 
 func NewHandler(
+	logger *slog.Logger,
 	authenticator *auth.BasicAuthenticator,
 	validator *DestinationValidator,
 	connectTimeout time.Duration,
@@ -42,6 +44,7 @@ func NewHandler(
 	}
 
 	return &Handler{
+		logger:         logger,
 		authenticator:  authenticator,
 		validator:      validator,
 		transport:      transport,
@@ -54,6 +57,12 @@ func (h *Handler) ServeHTTP(
 	request *http.Request,
 ) {
 	if !h.authenticator.Authenticate(request) {
+		h.logger.Warn(
+			"proxy authentication failed",
+			slog.String("remote_address", request.RemoteAddr),
+			slog.String("method", request.Method),
+		)
+
 		writer.Header().Set(
 			"Proxy-Authenticate",
 			`Basic realm="Nexus Proxy"`,
@@ -83,20 +92,33 @@ func (h *Handler) handleHTTP(
 	request *http.Request,
 ) {
 	if request.URL == nil || request.URL.Host == "" {
+		h.logger.Warn(
+			"HTTP request missing absolute destination",
+			slog.String("remote_address", request.RemoteAddr),
+		)
+
 		http.Error(
 			writer,
 			"absolute destination URL is required",
 			http.StatusBadRequest,
 		)
+
 		return
 	}
 
 	if request.URL.Scheme != "http" {
+		h.logger.Warn(
+			"unsupported HTTP URL scheme",
+			slog.String("scheme", request.URL.Scheme),
+			slog.String("destination", request.URL.Host),
+		)
+
 		http.Error(
 			writer,
 			"unsupported URL scheme",
 			http.StatusBadRequest,
 		)
+
 		return
 	}
 
@@ -104,10 +126,11 @@ func (h *Handler) handleHTTP(
 		request.Context(),
 		request.URL.Host,
 	); err != nil {
-		log.Printf(
-			"blocked HTTP destination %q: %v",
-			request.URL.Host,
-			err,
+		h.logger.Warn(
+			"blocked HTTP destination",
+			slog.String("destination", request.URL.Host),
+			slog.String("reason", err.Error()),
+			slog.String("remote_address", request.RemoteAddr),
 		)
 
 		http.Error(
@@ -115,6 +138,7 @@ func (h *Handler) handleHTTP(
 			"destination is not allowed",
 			http.StatusForbidden,
 		)
+
 		return
 	}
 
@@ -128,10 +152,11 @@ func (h *Handler) handleHTTP(
 
 	response, err := h.transport.RoundTrip(outboundRequest)
 	if err != nil {
-		log.Printf(
-			"HTTP forwarding failed for %s: %v",
-			request.URL.String(),
-			err,
+		h.logger.Error(
+			"HTTP forwarding failed",
+			slog.String("url", request.URL.String()),
+			slog.String("error", err.Error()),
+			slog.String("remote_address", request.RemoteAddr),
 		)
 
 		http.Error(
@@ -139,6 +164,7 @@ func (h *Handler) handleHTTP(
 			"upstream request failed",
 			http.StatusBadGateway,
 		)
+
 		return
 	}
 
@@ -151,8 +177,22 @@ func (h *Handler) handleHTTP(
 	writer.WriteHeader(response.StatusCode)
 
 	if _, err := io.Copy(writer, response.Body); err != nil {
-		log.Printf("response copy failed: %v", err)
+		h.logger.Error(
+			"HTTP response copy failed",
+			slog.String("url", request.URL.String()),
+			slog.String("error", err.Error()),
+		)
+
+		return
 	}
+
+	h.logger.Info(
+		"HTTP request forwarded",
+		slog.String("method", request.Method),
+		slog.String("destination", request.URL.Host),
+		slog.Int("status_code", response.StatusCode),
+		slog.String("remote_address", request.RemoteAddr),
+	)
 }
 
 func (h *Handler) handleConnect(
@@ -162,11 +202,17 @@ func (h *Handler) handleConnect(
 	destination := request.Host
 
 	if destination == "" {
+		h.logger.Warn(
+			"CONNECT request missing destination",
+			slog.String("remote_address", request.RemoteAddr),
+		)
+
 		http.Error(
 			writer,
 			"CONNECT destination is required",
 			http.StatusBadRequest,
 		)
+
 		return
 	}
 
@@ -178,10 +224,11 @@ func (h *Handler) handleConnect(
 		request.Context(),
 		destination,
 	); err != nil {
-		log.Printf(
-			"blocked CONNECT destination %q: %v",
-			destination,
-			err,
+		h.logger.Warn(
+			"blocked CONNECT destination",
+			slog.String("destination", destination),
+			slog.String("reason", err.Error()),
+			slog.String("remote_address", request.RemoteAddr),
 		)
 
 		http.Error(
@@ -189,6 +236,7 @@ func (h *Handler) handleConnect(
 			"destination is not allowed",
 			http.StatusForbidden,
 		)
+
 		return
 	}
 
@@ -202,10 +250,11 @@ func (h *Handler) handleConnect(
 		destination,
 	)
 	if err != nil {
-		log.Printf(
-			"CONNECT dial failed for %s: %v",
-			destination,
-			err,
+		h.logger.Error(
+			"CONNECT dial failed",
+			slog.String("destination", destination),
+			slog.String("error", err.Error()),
+			slog.String("remote_address", request.RemoteAddr),
 		)
 
 		http.Error(
@@ -213,79 +262,138 @@ func (h *Handler) handleConnect(
 			"unable to reach destination",
 			http.StatusBadGateway,
 		)
+
 		return
 	}
 
 	hijacker, ok := writer.(http.Hijacker)
 	if !ok {
-		upstreamConnection.Close()
+		_ = upstreamConnection.Close()
+
+		h.logger.Error(
+			"connection hijacking unsupported",
+			slog.String("destination", destination),
+		)
 
 		http.Error(
 			writer,
 			"connection hijacking is unsupported",
 			http.StatusInternalServerError,
 		)
+
 		return
 	}
 
 	clientConnection, bufferedWriter, err := hijacker.Hijack()
 	if err != nil {
-		upstreamConnection.Close()
+		_ = upstreamConnection.Close()
 
-		http.Error(
-			writer,
-			"failed to establish tunnel",
-			http.StatusInternalServerError,
+		h.logger.Error(
+			"failed to hijack client connection",
+			slog.String("destination", destination),
+			slog.String("error", err.Error()),
 		)
+
 		return
 	}
 
 	if _, err := bufferedWriter.WriteString(
 		"HTTP/1.1 200 Connection Established\r\n\r\n",
 	); err != nil {
-		clientConnection.Close()
-		upstreamConnection.Close()
+		h.logger.Error(
+			"failed to write CONNECT response",
+			slog.String("destination", destination),
+			slog.String("error", err.Error()),
+		)
+
+		_ = clientConnection.Close()
+		_ = upstreamConnection.Close()
+
 		return
 	}
 
 	if err := bufferedWriter.Flush(); err != nil {
-		clientConnection.Close()
-		upstreamConnection.Close()
+		h.logger.Error(
+			"failed to flush CONNECT response",
+			slog.String("destination", destination),
+			slog.String("error", err.Error()),
+		)
+
+		_ = clientConnection.Close()
+		_ = upstreamConnection.Close()
+
 		return
 	}
 
-	log.Printf(
-		"CONNECT tunnel established to %s",
-		destination,
+	h.logger.Info(
+		"CONNECT tunnel established",
+		slog.String("destination", destination),
+		slog.String("remote_address", request.RemoteAddr),
 	)
 
-	tunnel(clientConnection, upstreamConnection)
+	tunnel(
+		h.logger,
+		clientConnection,
+		upstreamConnection,
+		destination,
+	)
 }
 
-func tunnel(client net.Conn, upstream net.Conn) {
+func tunnel(
+	logger *slog.Logger,
+	client net.Conn,
+	upstream net.Conn,
+	destination string,
+) {
 	defer client.Close()
 	defer upstream.Close()
 
 	done := make(chan struct{}, 2)
 
-	copyConnection := func(destination, source net.Conn) {
-		_, err := io.Copy(destination, source)
+	copyConnection := func(
+		connectionName string,
+		destinationConnection net.Conn,
+		sourceConnection net.Conn,
+	) {
+		_, err := io.Copy(
+			destinationConnection,
+			sourceConnection,
+		)
 
 		if err != nil && !isExpectedNetworkError(err) {
-			log.Printf("tunnel copy error: %v", err)
+			logger.Error(
+				"tunnel copy failed",
+				slog.String("direction", connectionName),
+				slog.String("destination", destination),
+				slog.String("error", err.Error()),
+			)
 		}
 
-		if tcpConnection, ok := destination.(*net.TCPConn); ok {
+		if tcpConnection, ok := destinationConnection.(*net.TCPConn); ok {
 			_ = tcpConnection.CloseWrite()
 		}
 
 		done <- struct{}{}
 	}
 
-	go copyConnection(upstream, client)
-	go copyConnection(client, upstream)
+	go copyConnection(
+		"client_to_upstream",
+		upstream,
+		client,
+	)
+
+	go copyConnection(
+		"upstream_to_client",
+		client,
+		upstream,
+	)
 
 	<-done
+
+	logger.Info(
+		"CONNECT tunnel closed",
+		slog.String("destination", destination),
+	)
 }
 
 func removeIdentityHeaders(headers http.Header) {
@@ -323,7 +431,10 @@ func removeHopByHopHeaders(headers http.Header) {
 	}
 }
 
-func copyHeaders(destination, source http.Header) {
+func copyHeaders(
+	destination http.Header,
+	source http.Header,
+) {
 	for key, values := range source {
 		for _, value := range values {
 			destination.Add(key, value)

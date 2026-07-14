@@ -8,6 +8,9 @@ import (
 )
 
 type Config struct {
+	Environment     string
+	LogLevel        string
+	NodeID          string
 	Host            string
 	Port            string
 	Username        string
@@ -21,6 +24,9 @@ type Config struct {
 
 func Load() (Config, error) {
 	cfg := Config{
+		Environment:     getEnv("APP_ENV", "development"),
+		LogLevel:        getEnv("LOG_LEVEL", "info"),
+		NodeID:          getEnv("NODE_ID", "local-node-01"),
 		Host:            getEnv("PROXY_HOST", "0.0.0.0"),
 		Port:            getEnv("PROXY_PORT", "8080"),
 		Username:        os.Getenv("PROXY_USERNAME"),

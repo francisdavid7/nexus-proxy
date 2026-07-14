@@ -3,16 +3,18 @@ package server
 import (
 	"context"
 	"errors"
-	"log"
+	"log/slog"
 	"net/http"
 	"time"
 )
 
 type Server struct {
+	logger     *slog.Logger
 	httpServer *http.Server
 }
 
 func New(
+	logger *slog.Logger,
 	address string,
 	handler http.Handler,
 	readTimeout time.Duration,
@@ -20,6 +22,7 @@ func New(
 	idleTimeout time.Duration,
 ) *Server {
 	return &Server{
+		logger: logger,
 		httpServer: &http.Server{
 			Addr:              address,
 			Handler:           handler,
@@ -33,9 +36,9 @@ func New(
 }
 
 func (s *Server) Start() error {
-	log.Printf(
-		"Nexus proxy engine listening on %s",
-		s.httpServer.Addr,
+	s.logger.Info(
+		"proxy engine started",
+		slog.String("address", s.httpServer.Addr),
 	)
 
 	err := s.httpServer.ListenAndServe()
@@ -48,7 +51,7 @@ func (s *Server) Start() error {
 }
 
 func (s *Server) Shutdown(ctx context.Context) error {
-	log.Println("shutting down Nexus proxy engine")
+	s.logger.Info("proxy engine shutting down")
 
 	return s.httpServer.Shutdown(ctx)
 }
