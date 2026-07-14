@@ -1,76 +1,54 @@
 package server
 
 import (
+	"context"
 	"errors"
-	"io"
 	"log"
-	"net"
+	"net/http"
 	"time"
 )
 
 type Server struct {
-	address string
+	httpServer *http.Server
 }
 
-func New(address string) *Server {
+func New(
+	address string,
+	handler http.Handler,
+	readTimeout time.Duration,
+	writeTimeout time.Duration,
+	idleTimeout time.Duration,
+) *Server {
 	return &Server{
-		address: address,
+		httpServer: &http.Server{
+			Addr:              address,
+			Handler:           handler,
+			ReadHeaderTimeout: 10 * time.Second,
+			ReadTimeout:       readTimeout,
+			WriteTimeout:      writeTimeout,
+			IdleTimeout:       idleTimeout,
+			MaxHeaderBytes:    1 << 20,
+		},
 	}
 }
 
 func (s *Server) Start() error {
-	listener, err := net.Listen("tcp", s.address)
-	if err != nil {
-		return err
-	}
-
-	defer listener.Close()
-
-	log.Printf("proxy engine listening on %s", s.address)
-
-	for {
-		connection, err := listener.Accept()
-		if err != nil {
-			log.Printf("failed to accept connection: %v", err)
-			continue
-		}
-
-		go s.handleConnection(connection)
-	}
-}
-
-func (s *Server) handleConnection(connection net.Conn) {
-	defer connection.Close()
-
-	remoteAddress := connection.RemoteAddr().String()
-
-	log.Printf("new connection from %s", remoteAddress)
-
-	if err := connection.SetDeadline(time.Now().Add(30 * time.Second)); err != nil {
-		log.Printf("failed to set deadline for %s: %v", remoteAddress, err)
-		return
-	}
-
-	buffer := make([]byte, 4096)
-
-	bytesRead, err := connection.Read(buffer)
-	if err != nil {
-		if !errors.Is(err, io.EOF) {
-			log.Printf("failed reading from %s: %v", remoteAddress, err)
-		}
-
-		return
-	}
-
 	log.Printf(
-		"received %d bytes from %s",
-		bytesRead,
-		remoteAddress,
+		"Nexus proxy engine listening on %s",
+		s.httpServer.Addr,
 	)
 
-	response := []byte("Nexus Proxy Engine is running\n")
+	err := s.httpServer.ListenAndServe()
 
-	if _, err := connection.Write(response); err != nil {
-		log.Printf("failed writing to %s: %v", remoteAddress, err)
+	if errors.Is(err, http.ErrServerClosed) {
+		return nil
 	}
+
+	return err
+}
+
+func (s *Server) Shutdown(ctx context.Context) error {
+	log.Println("shutting down Nexus proxy engine")
+
+	return s.httpServer.Shutdown(ctx)
 }
