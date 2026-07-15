@@ -27,23 +27,33 @@ const (
 )
 
 type Credential struct {
-	ID                 string     `json:"id"`
-	OrganizationID     string     `json:"organizationId"`
-	UserID             string     `json:"userId"`
-	Username           string     `json:"username"`
-	SecretDigest       string     `json:"secretDigest"`
-	Status             string     `json:"status"`
-	UserStatus         string     `json:"userStatus"`
-	AllowedProtocols   []string   `json:"allowedProtocols"`
-	ExpiresAt          *time.Time `json:"expiresAt"`
-	SubscriptionActive bool       `json:"subscriptionActive"`
+	ID                       string     `json:"id"`
+	OrganizationID           string     `json:"organizationId"`
+	UserID                   string     `json:"userId"`
+	Username                 string     `json:"username"`
+	SecretDigest             string     `json:"secretDigest"`
+	Status                   string     `json:"status"`
+	UserStatus               string     `json:"userStatus"`
+	AllowedProtocols         []string   `json:"allowedProtocols"`
+	ExpiresAt                *time.Time `json:"expiresAt"`
+	SubscriptionActive       bool       `json:"subscriptionActive"`
+	BandwidthLimitBytes      *int64     `json:"bandwidthLimitBytes"`
+	MaxConcurrentConnections int        `json:"maxConcurrentConnections"`
+	ConnectionsPerMinute     int        `json:"connectionsPerMinute"`
+	CurrentPeriodStart       time.Time  `json:"currentPeriodStart"`
+	CurrentPeriodEnd         time.Time  `json:"currentPeriodEnd"`
 }
 
 type Principal struct {
-	CredentialID   string
-	OrganizationID string
-	UserID         string
-	Username       string
+	CredentialID             string
+	OrganizationID           string
+	UserID                   string
+	Username                 string
+	BandwidthLimitBytes      *int64
+	MaxConcurrentConnections int
+	ConnectionsPerMinute     int
+	CurrentPeriodStart       time.Time
+	CurrentPeriodEnd         time.Time
 }
 
 type CredentialRepository interface {
@@ -65,6 +75,16 @@ type CredentialCache interface {
 		credential Credential,
 		ttl time.Duration,
 	) error
+
+	Delete(
+		ctx context.Context,
+		username string,
+	) error
+
+	IsRevoked(
+		ctx context.Context,
+		username string,
+	) (bool, error)
 }
 
 type Authenticator struct {
@@ -101,25 +121,37 @@ func (a *Authenticator) Authenticate(
 		return Principal{}, ErrUnauthorized
 	}
 
+	if a.cache != nil {
+		revoked, err := a.cache.IsRevoked(ctx, username)
+
+		if err != nil {
+			a.logger.Warn(
+				"credential revocation lookup failed",
+				slog.String("username", username),
+				slog.String("error", err.Error()),
+			)
+		} else if revoked {
+			return Principal{}, ErrUnauthorized
+		}
+	}
+
 	credential, err := a.loadCredential(ctx, username)
 	if err != nil {
 		return Principal{}, ErrUnauthorized
 	}
 
-	if credential.Status != "ACTIVE" {
-		return Principal{}, ErrUnauthorized
-	}
+	if credential.Status != "ACTIVE" ||
+		credential.UserStatus != "ACTIVE" ||
+		!credential.SubscriptionActive {
+		a.deleteCachedCredential(ctx, username)
 
-	if credential.UserStatus != "ACTIVE" {
-		return Principal{}, ErrUnauthorized
-	}
-
-	if !credential.SubscriptionActive {
 		return Principal{}, ErrUnauthorized
 	}
 
 	if credential.ExpiresAt != nil &&
 		time.Now().After(*credential.ExpiresAt) {
+		a.deleteCachedCredential(ctx, username)
+
 		return Principal{}, ErrUnauthorized
 	}
 
@@ -149,17 +181,20 @@ func (a *Authenticator) Authenticate(
 
 	_, _ = mac.Write([]byte(secret))
 
-	calculatedDigest := mac.Sum(nil)
-
-	if !hmac.Equal(calculatedDigest, expectedDigest) {
+	if !hmac.Equal(mac.Sum(nil), expectedDigest) {
 		return Principal{}, ErrUnauthorized
 	}
 
 	return Principal{
-		CredentialID:   credential.ID,
-		OrganizationID: credential.OrganizationID,
-		UserID:         credential.UserID,
-		Username:       credential.Username,
+		CredentialID:             credential.ID,
+		OrganizationID:           credential.OrganizationID,
+		UserID:                   credential.UserID,
+		Username:                 credential.Username,
+		BandwidthLimitBytes:      credential.BandwidthLimitBytes,
+		MaxConcurrentConnections: credential.MaxConcurrentConnections,
+		ConnectionsPerMinute:     credential.ConnectionsPerMinute,
+		CurrentPeriodStart:       credential.CurrentPeriodStart,
+		CurrentPeriodEnd:         credential.CurrentPeriodEnd,
 	}, nil
 }
 
@@ -205,6 +240,23 @@ func (a *Authenticator) loadCredential(
 	return credential, nil
 }
 
+func (a *Authenticator) deleteCachedCredential(
+	ctx context.Context,
+	username string,
+) {
+	if a.cache == nil {
+		return
+	}
+
+	if err := a.cache.Delete(ctx, username); err != nil {
+		a.logger.Warn(
+			"credential cache deletion failed",
+			slog.String("username", username),
+			slog.String("error", err.Error()),
+		)
+	}
+}
+
 func readProxyBasicAuth(
 	request *http.Request,
 ) (string, string, bool) {
@@ -218,10 +270,9 @@ func readProxyBasicAuth(
 		return "", "", false
 	}
 
-	encodedCredentials :=
-		strings.TrimSpace(
-			strings.TrimPrefix(header, prefix),
-		)
+	encodedCredentials := strings.TrimSpace(
+		strings.TrimPrefix(header, prefix),
+	)
 
 	decodedCredentials, err :=
 		base64.StdEncoding.DecodeString(
@@ -237,9 +288,9 @@ func readProxyBasicAuth(
 		":",
 	)
 
-	if !found ||
-		strings.TrimSpace(username) == "" ||
-		secret == "" {
+	username = strings.TrimSpace(username)
+
+	if !found || username == "" || secret == "" {
 		return "", "", false
 	}
 

@@ -129,6 +129,8 @@ export const PlanScalarFieldEnum = {
   bandwidthLimitBytes: 'bandwidthLimitBytes',
   deviceLimit: 'deviceLimit',
   credentialLimit: 'credentialLimit',
+  maxConcurrentConnections: 'maxConcurrentConnections',
+  connectionsPerMinute: 'connectionsPerMinute',
   active: 'active',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'

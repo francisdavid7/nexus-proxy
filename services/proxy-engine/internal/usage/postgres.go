@@ -4,12 +4,28 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"log/slog"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/francisdavid7/nexus-proxy/services/proxy-engine/internal/auth"
+)
+
+var (
+	ErrConcurrentLimit = errors.New(
+		"maximum concurrent connections reached",
+	)
+
+	ErrBandwidthLimit = errors.New(
+		"subscription bandwidth limit reached",
+	)
+
+	ErrNodeCapacity = errors.New(
+		"proxy node is at maximum capacity",
+	)
 )
 
 type SessionStatus string
@@ -55,11 +71,17 @@ func NewPostgresRecorder(
 		)
 	}
 
-	return &PostgresRecorder{
+	recorder := &PostgresRecorder{
 		logger: logger,
 		pool:   pool,
 		nodeID: nodeID,
-	}, nil
+	}
+
+	if err := recorder.recoverStaleSessions(ctx); err != nil {
+		return nil, err
+	}
+
+	return recorder, nil
 }
 
 func (r *PostgresRecorder) StartSession(
@@ -67,15 +89,10 @@ func (r *PostgresRecorder) StartSession(
 	principal auth.Principal,
 	protocol auth.Protocol,
 ) (string, error) {
-	sessionID, err := newUUID()
-	if err != nil {
-		return "", fmt.Errorf(
-			"generate session ID: %w",
-			err,
-		)
-	}
-
-	transaction, err := r.pool.Begin(ctx)
+	transaction, err := r.pool.BeginTx(
+		ctx,
+		pgx.TxOptions{},
+	)
 	if err != nil {
 		return "", fmt.Errorf(
 			"begin session transaction: %w",
@@ -86,6 +103,135 @@ func (r *PostgresRecorder) StartSession(
 	defer func() {
 		_ = transaction.Rollback(ctx)
 	}()
+
+	const lockCredentialQuery = `
+		SELECT id
+		FROM proxy_credentials
+		WHERE id = $1::uuid
+		FOR UPDATE
+	`
+
+	var credentialID string
+
+	if err := transaction.QueryRow(
+		ctx,
+		lockCredentialQuery,
+		principal.CredentialID,
+	).Scan(&credentialID); err != nil {
+		return "", fmt.Errorf(
+			"lock proxy credential: %w",
+			err,
+		)
+	}
+
+	const activeSessionsQuery = `
+		SELECT COUNT(*)
+		FROM connection_sessions
+		WHERE
+			credential_id = $1::uuid
+			AND status = 'ACTIVE'::"SessionStatus"
+	`
+
+	var activeSessions int
+
+	if err := transaction.QueryRow(
+		ctx,
+		activeSessionsQuery,
+		principal.CredentialID,
+	).Scan(&activeSessions); err != nil {
+		return "", fmt.Errorf(
+			"count active sessions: %w",
+			err,
+		)
+	}
+
+	if principal.MaxConcurrentConnections > 0 &&
+		activeSessions >=
+			principal.MaxConcurrentConnections {
+		return "", ErrConcurrentLimit
+	}
+
+	if principal.BandwidthLimitBytes != nil {
+		const bandwidthQuery = `
+			SELECT COALESCE(
+				SUM(
+					bytes_uploaded
+					+ bytes_downloaded
+				),
+				0
+			)::bigint
+
+			FROM connection_sessions
+
+			WHERE
+				organization_id = $1::uuid
+				AND started_at >= $2
+				AND started_at < $3
+		`
+
+		var usedBytes int64
+
+		if err := transaction.QueryRow(
+			ctx,
+			bandwidthQuery,
+			principal.OrganizationID,
+			principal.CurrentPeriodStart,
+			principal.CurrentPeriodEnd,
+		).Scan(&usedBytes); err != nil {
+			return "", fmt.Errorf(
+				"calculate bandwidth usage: %w",
+				err,
+			)
+		}
+
+		if usedBytes >=
+			*principal.BandwidthLimitBytes {
+			return "", ErrBandwidthLimit
+		}
+	}
+
+	const lockNodeQuery = `
+		SELECT
+			max_connections,
+			active_connections
+
+		FROM proxy_nodes
+
+		WHERE id = $1::uuid
+
+		FOR UPDATE
+	`
+
+	var maxNodeConnections int
+	var activeNodeConnections int
+
+	if err := transaction.QueryRow(
+		ctx,
+		lockNodeQuery,
+		r.nodeID,
+	).Scan(
+		&maxNodeConnections,
+		&activeNodeConnections,
+	); err != nil {
+		return "", fmt.Errorf(
+			"lock proxy node: %w",
+			err,
+		)
+	}
+
+	if maxNodeConnections > 0 &&
+		activeNodeConnections >=
+			maxNodeConnections {
+		return "", ErrNodeCapacity
+	}
+
+	sessionID, err := newUUID()
+	if err != nil {
+		return "", fmt.Errorf(
+			"generate session ID: %w",
+			err,
+		)
+	}
 
 	const createSessionQuery = `
 		INSERT INTO connection_sessions (
@@ -114,7 +260,7 @@ func (r *PostgresRecorder) StartSession(
 		)
 	`
 
-	_, err = transaction.Exec(
+	if _, err := transaction.Exec(
 		ctx,
 		createSessionQuery,
 		sessionID,
@@ -123,9 +269,7 @@ func (r *PostgresRecorder) StartSession(
 		principal.CredentialID,
 		r.nodeID,
 		string(protocol),
-	)
-
-	if err != nil {
+	); err != nil {
 		return "", fmt.Errorf(
 			"create connection session: %w",
 			err,
@@ -160,19 +304,6 @@ func (r *PostgresRecorder) StartSession(
 		)
 	}
 
-	r.logger.Debug(
-		"connection session started",
-		slog.String("session_id", sessionID),
-		slog.String(
-			"credential_id",
-			principal.CredentialID,
-		),
-		slog.String(
-			"protocol",
-			string(protocol),
-		),
-	)
-
 	return sessionID, nil
 }
 
@@ -194,7 +325,7 @@ func (r *PostgresRecorder) FinishSession(
 	transaction, err := r.pool.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf(
-			"begin session completion transaction: %w",
+			"begin session completion: %w",
 			err,
 		)
 	}
@@ -210,17 +341,43 @@ func (r *PostgresRecorder) FinishSession(
 			bytes_uploaded = $3,
 			bytes_downloaded = $4,
 			ended_at = NOW()
-		WHERE id = $1::uuid
+
+		WHERE
+			id = $1::uuid
+			AND status = 'ACTIVE'::"SessionStatus"
+
+		RETURNING
+			organization_id::text,
+			user_id::text,
+			credential_id::text,
+			node_id::text,
+			started_at
 	`
 
-	result, err := transaction.Exec(
+	var organizationID string
+	var userID string
+	var credentialID string
+	var nodeID string
+	var startedAt any
+
+	err = transaction.QueryRow(
 		ctx,
 		finishSessionQuery,
 		sessionID,
 		string(status),
 		bytesUploaded,
 		bytesDownloaded,
+	).Scan(
+		&organizationID,
+		&userID,
+		&credentialID,
+		&nodeID,
+		&startedAt,
 	)
+
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil
+	}
 
 	if err != nil {
 		return fmt.Errorf(
@@ -229,18 +386,14 @@ func (r *PostgresRecorder) FinishSession(
 		)
 	}
 
-	if result.RowsAffected() != 1 {
-		return fmt.Errorf(
-			"connection session %s was not found",
-			sessionID,
-		)
-	}
-
 	const updateNodeQuery = `
 		UPDATE proxy_nodes
 		SET
 			active_connections =
-				GREATEST(active_connections - 1, 0),
+				GREATEST(
+					active_connections - 1,
+					0
+				),
 			last_heartbeat_at = NOW()
 		WHERE id = $1::uuid
 	`
@@ -256,31 +409,145 @@ func (r *PostgresRecorder) FinishSession(
 		)
 	}
 
-	if err := transaction.Commit(ctx); err != nil {
+	usageID, err := newUUID()
+	if err != nil {
+		return err
+	}
+
+	const usageQuery = `
+		INSERT INTO usage_records (
+			id,
+			organization_id,
+			user_id,
+			credential_id,
+			node_id,
+			period_start,
+			period_end,
+			bytes_uploaded,
+			bytes_downloaded,
+			connection_count,
+			created_at,
+			updated_at
+		)
+		VALUES (
+			$1::uuid,
+			$2::uuid,
+			$3::uuid,
+			$4::uuid,
+			$5::uuid,
+			date_trunc(
+				'day',
+				$6::timestamptz
+			),
+			date_trunc(
+				'day',
+				$6::timestamptz
+			) + INTERVAL '1 day',
+			$7,
+			$8,
+			1,
+			NOW(),
+			NOW()
+		)
+
+		ON CONFLICT (
+			credential_id,
+			node_id,
+			period_start,
+			period_end
+		)
+
+		DO UPDATE SET
+			bytes_uploaded =
+				usage_records.bytes_uploaded
+				+ EXCLUDED.bytes_uploaded,
+
+			bytes_downloaded =
+				usage_records.bytes_downloaded
+				+ EXCLUDED.bytes_downloaded,
+
+			connection_count =
+				usage_records.connection_count
+				+ 1,
+
+			updated_at = NOW()
+	`
+
+	if _, err := transaction.Exec(
+		ctx,
+		usageQuery,
+		usageID,
+		organizationID,
+		userID,
+		credentialID,
+		nodeID,
+		startedAt,
+		bytesUploaded,
+		bytesDownloaded,
+	); err != nil {
 		return fmt.Errorf(
-			"commit session completion: %w",
+			"aggregate usage record: %w",
 			err,
 		)
 	}
 
-	r.logger.Debug(
-		"connection session finished",
-		slog.String("session_id", sessionID),
-		slog.Int64(
-			"bytes_uploaded",
-			bytesUploaded,
-		),
-		slog.Int64(
-			"bytes_downloaded",
-			bytesDownloaded,
-		),
-		slog.String(
-			"status",
-			string(status),
-		),
-	)
+	return transaction.Commit(ctx)
+}
 
-	return nil
+func (r *PostgresRecorder) recoverStaleSessions(
+	ctx context.Context,
+) error {
+	transaction, err := r.pool.Begin(ctx)
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		_ = transaction.Rollback(ctx)
+	}()
+
+	const recoverQuery = `
+		UPDATE connection_sessions
+		SET
+			status = 'FAILED'::"SessionStatus",
+			ended_at = NOW()
+		WHERE
+			node_id = $1::uuid
+			AND status = 'ACTIVE'::"SessionStatus"
+	`
+
+	if _, err := transaction.Exec(
+		ctx,
+		recoverQuery,
+		r.nodeID,
+	); err != nil {
+		return fmt.Errorf(
+			"recover stale sessions: %w",
+			err,
+		)
+	}
+
+	const resetNodeQuery = `
+		UPDATE proxy_nodes
+		SET
+			active_connections = 0,
+			last_heartbeat_at = NOW(),
+			status = 'ONLINE'::"NodeStatus"
+		WHERE id = $1::uuid
+	`
+
+	if _, err := transaction.Exec(
+		ctx,
+		resetNodeQuery,
+		r.nodeID,
+	); err != nil {
+		return fmt.Errorf(
+			"reset node connection count: %w",
+			err,
+		)
+	}
+
+	return transaction.Commit(ctx)
 }
 
 func newUUID() (string, error) {

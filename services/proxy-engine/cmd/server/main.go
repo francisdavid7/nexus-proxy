@@ -15,6 +15,7 @@ import (
 	"github.com/francisdavid7/nexus-proxy/services/proxy-engine/internal/config"
 	"github.com/francisdavid7/nexus-proxy/services/proxy-engine/internal/logging"
 	"github.com/francisdavid7/nexus-proxy/services/proxy-engine/internal/proxy"
+	"github.com/francisdavid7/nexus-proxy/services/proxy-engine/internal/ratelimit"
 	"github.com/francisdavid7/nexus-proxy/services/proxy-engine/internal/server"
 	"github.com/francisdavid7/nexus-proxy/services/proxy-engine/internal/usage"
 )
@@ -112,7 +113,7 @@ func main() {
 	credentialCache :=
 		auth.NewRedisCredentialCache(
 			redisClient,
-			"nexus:auth:credential",
+			"nexus:auth",
 		)
 
 	authenticator := auth.NewAuthenticator(
@@ -142,6 +143,11 @@ func main() {
 
 	logger.Info("usage recorder initialized")
 
+	rateLimiter := ratelimit.NewRedisLimiter(
+		redisClient,
+		"nexus:rate:connections",
+	)
+
 	validator := proxy.NewDestinationValidator(
 		cfg.AllowPrivateIPs,
 	)
@@ -150,6 +156,7 @@ func main() {
 		logger,
 		authenticator,
 		usageRecorder,
+		rateLimiter,
 		validator,
 		cfg.ConnectTimeout,
 	)

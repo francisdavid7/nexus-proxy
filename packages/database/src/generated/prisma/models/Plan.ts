@@ -31,6 +31,8 @@ export type PlanAvgAggregateOutputType = {
   bandwidthLimitBytes: number | null
   deviceLimit: number | null
   credentialLimit: number | null
+  maxConcurrentConnections: number | null
+  connectionsPerMinute: number | null
 }
 
 export type PlanSumAggregateOutputType = {
@@ -38,6 +40,8 @@ export type PlanSumAggregateOutputType = {
   bandwidthLimitBytes: bigint | null
   deviceLimit: number | null
   credentialLimit: number | null
+  maxConcurrentConnections: number | null
+  connectionsPerMinute: number | null
 }
 
 export type PlanMinAggregateOutputType = {
@@ -48,6 +52,8 @@ export type PlanMinAggregateOutputType = {
   bandwidthLimitBytes: bigint | null
   deviceLimit: number | null
   credentialLimit: number | null
+  maxConcurrentConnections: number | null
+  connectionsPerMinute: number | null
   active: boolean | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -61,6 +67,8 @@ export type PlanMaxAggregateOutputType = {
   bandwidthLimitBytes: bigint | null
   deviceLimit: number | null
   credentialLimit: number | null
+  maxConcurrentConnections: number | null
+  connectionsPerMinute: number | null
   active: boolean | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -74,6 +82,8 @@ export type PlanCountAggregateOutputType = {
   bandwidthLimitBytes: number
   deviceLimit: number
   credentialLimit: number
+  maxConcurrentConnections: number
+  connectionsPerMinute: number
   active: number
   createdAt: number
   updatedAt: number
@@ -86,6 +96,8 @@ export type PlanAvgAggregateInputType = {
   bandwidthLimitBytes?: true
   deviceLimit?: true
   credentialLimit?: true
+  maxConcurrentConnections?: true
+  connectionsPerMinute?: true
 }
 
 export type PlanSumAggregateInputType = {
@@ -93,6 +105,8 @@ export type PlanSumAggregateInputType = {
   bandwidthLimitBytes?: true
   deviceLimit?: true
   credentialLimit?: true
+  maxConcurrentConnections?: true
+  connectionsPerMinute?: true
 }
 
 export type PlanMinAggregateInputType = {
@@ -103,6 +117,8 @@ export type PlanMinAggregateInputType = {
   bandwidthLimitBytes?: true
   deviceLimit?: true
   credentialLimit?: true
+  maxConcurrentConnections?: true
+  connectionsPerMinute?: true
   active?: true
   createdAt?: true
   updatedAt?: true
@@ -116,6 +132,8 @@ export type PlanMaxAggregateInputType = {
   bandwidthLimitBytes?: true
   deviceLimit?: true
   credentialLimit?: true
+  maxConcurrentConnections?: true
+  connectionsPerMinute?: true
   active?: true
   createdAt?: true
   updatedAt?: true
@@ -129,6 +147,8 @@ export type PlanCountAggregateInputType = {
   bandwidthLimitBytes?: true
   deviceLimit?: true
   credentialLimit?: true
+  maxConcurrentConnections?: true
+  connectionsPerMinute?: true
   active?: true
   createdAt?: true
   updatedAt?: true
@@ -229,6 +249,8 @@ export type PlanGroupByOutputType = {
   bandwidthLimitBytes: bigint | null
   deviceLimit: number
   credentialLimit: number
+  maxConcurrentConnections: number
+  connectionsPerMinute: number
   active: boolean
   createdAt: Date
   updatedAt: Date
@@ -265,6 +287,8 @@ export type PlanWhereInput = {
   bandwidthLimitBytes?: Prisma.BigIntNullableFilter<"Plan"> | bigint | number | null
   deviceLimit?: Prisma.IntFilter<"Plan"> | number
   credentialLimit?: Prisma.IntFilter<"Plan"> | number
+  maxConcurrentConnections?: Prisma.IntFilter<"Plan"> | number
+  connectionsPerMinute?: Prisma.IntFilter<"Plan"> | number
   active?: Prisma.BoolFilter<"Plan"> | boolean
   createdAt?: Prisma.DateTimeFilter<"Plan"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Plan"> | Date | string
@@ -279,6 +303,8 @@ export type PlanOrderByWithRelationInput = {
   bandwidthLimitBytes?: Prisma.SortOrderInput | Prisma.SortOrder
   deviceLimit?: Prisma.SortOrder
   credentialLimit?: Prisma.SortOrder
+  maxConcurrentConnections?: Prisma.SortOrder
+  connectionsPerMinute?: Prisma.SortOrder
   active?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -296,6 +322,8 @@ export type PlanWhereUniqueInput = Prisma.AtLeast<{
   bandwidthLimitBytes?: Prisma.BigIntNullableFilter<"Plan"> | bigint | number | null
   deviceLimit?: Prisma.IntFilter<"Plan"> | number
   credentialLimit?: Prisma.IntFilter<"Plan"> | number
+  maxConcurrentConnections?: Prisma.IntFilter<"Plan"> | number
+  connectionsPerMinute?: Prisma.IntFilter<"Plan"> | number
   active?: Prisma.BoolFilter<"Plan"> | boolean
   createdAt?: Prisma.DateTimeFilter<"Plan"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Plan"> | Date | string
@@ -310,6 +338,8 @@ export type PlanOrderByWithAggregationInput = {
   bandwidthLimitBytes?: Prisma.SortOrderInput | Prisma.SortOrder
   deviceLimit?: Prisma.SortOrder
   credentialLimit?: Prisma.SortOrder
+  maxConcurrentConnections?: Prisma.SortOrder
+  connectionsPerMinute?: Prisma.SortOrder
   active?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -331,6 +361,8 @@ export type PlanScalarWhereWithAggregatesInput = {
   bandwidthLimitBytes?: Prisma.BigIntNullableWithAggregatesFilter<"Plan"> | bigint | number | null
   deviceLimit?: Prisma.IntWithAggregatesFilter<"Plan"> | number
   credentialLimit?: Prisma.IntWithAggregatesFilter<"Plan"> | number
+  maxConcurrentConnections?: Prisma.IntWithAggregatesFilter<"Plan"> | number
+  connectionsPerMinute?: Prisma.IntWithAggregatesFilter<"Plan"> | number
   active?: Prisma.BoolWithAggregatesFilter<"Plan"> | boolean
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Plan"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Plan"> | Date | string
@@ -344,6 +376,8 @@ export type PlanCreateInput = {
   bandwidthLimitBytes?: bigint | number | null
   deviceLimit?: number
   credentialLimit?: number
+  maxConcurrentConnections?: number
+  connectionsPerMinute?: number
   active?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -358,6 +392,8 @@ export type PlanUncheckedCreateInput = {
   bandwidthLimitBytes?: bigint | number | null
   deviceLimit?: number
   credentialLimit?: number
+  maxConcurrentConnections?: number
+  connectionsPerMinute?: number
   active?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -372,6 +408,8 @@ export type PlanUpdateInput = {
   bandwidthLimitBytes?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   deviceLimit?: Prisma.IntFieldUpdateOperationsInput | number
   credentialLimit?: Prisma.IntFieldUpdateOperationsInput | number
+  maxConcurrentConnections?: Prisma.IntFieldUpdateOperationsInput | number
+  connectionsPerMinute?: Prisma.IntFieldUpdateOperationsInput | number
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -386,6 +424,8 @@ export type PlanUncheckedUpdateInput = {
   bandwidthLimitBytes?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   deviceLimit?: Prisma.IntFieldUpdateOperationsInput | number
   credentialLimit?: Prisma.IntFieldUpdateOperationsInput | number
+  maxConcurrentConnections?: Prisma.IntFieldUpdateOperationsInput | number
+  connectionsPerMinute?: Prisma.IntFieldUpdateOperationsInput | number
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -400,6 +440,8 @@ export type PlanCreateManyInput = {
   bandwidthLimitBytes?: bigint | number | null
   deviceLimit?: number
   credentialLimit?: number
+  maxConcurrentConnections?: number
+  connectionsPerMinute?: number
   active?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -413,6 +455,8 @@ export type PlanUpdateManyMutationInput = {
   bandwidthLimitBytes?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   deviceLimit?: Prisma.IntFieldUpdateOperationsInput | number
   credentialLimit?: Prisma.IntFieldUpdateOperationsInput | number
+  maxConcurrentConnections?: Prisma.IntFieldUpdateOperationsInput | number
+  connectionsPerMinute?: Prisma.IntFieldUpdateOperationsInput | number
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -426,6 +470,8 @@ export type PlanUncheckedUpdateManyInput = {
   bandwidthLimitBytes?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   deviceLimit?: Prisma.IntFieldUpdateOperationsInput | number
   credentialLimit?: Prisma.IntFieldUpdateOperationsInput | number
+  maxConcurrentConnections?: Prisma.IntFieldUpdateOperationsInput | number
+  connectionsPerMinute?: Prisma.IntFieldUpdateOperationsInput | number
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -439,6 +485,8 @@ export type PlanCountOrderByAggregateInput = {
   bandwidthLimitBytes?: Prisma.SortOrder
   deviceLimit?: Prisma.SortOrder
   credentialLimit?: Prisma.SortOrder
+  maxConcurrentConnections?: Prisma.SortOrder
+  connectionsPerMinute?: Prisma.SortOrder
   active?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -449,6 +497,8 @@ export type PlanAvgOrderByAggregateInput = {
   bandwidthLimitBytes?: Prisma.SortOrder
   deviceLimit?: Prisma.SortOrder
   credentialLimit?: Prisma.SortOrder
+  maxConcurrentConnections?: Prisma.SortOrder
+  connectionsPerMinute?: Prisma.SortOrder
 }
 
 export type PlanMaxOrderByAggregateInput = {
@@ -459,6 +509,8 @@ export type PlanMaxOrderByAggregateInput = {
   bandwidthLimitBytes?: Prisma.SortOrder
   deviceLimit?: Prisma.SortOrder
   credentialLimit?: Prisma.SortOrder
+  maxConcurrentConnections?: Prisma.SortOrder
+  connectionsPerMinute?: Prisma.SortOrder
   active?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -472,6 +524,8 @@ export type PlanMinOrderByAggregateInput = {
   bandwidthLimitBytes?: Prisma.SortOrder
   deviceLimit?: Prisma.SortOrder
   credentialLimit?: Prisma.SortOrder
+  maxConcurrentConnections?: Prisma.SortOrder
+  connectionsPerMinute?: Prisma.SortOrder
   active?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -482,6 +536,8 @@ export type PlanSumOrderByAggregateInput = {
   bandwidthLimitBytes?: Prisma.SortOrder
   deviceLimit?: Prisma.SortOrder
   credentialLimit?: Prisma.SortOrder
+  maxConcurrentConnections?: Prisma.SortOrder
+  connectionsPerMinute?: Prisma.SortOrder
 }
 
 export type PlanScalarRelationFilter = {
@@ -531,6 +587,8 @@ export type PlanCreateWithoutSubscriptionsInput = {
   bandwidthLimitBytes?: bigint | number | null
   deviceLimit?: number
   credentialLimit?: number
+  maxConcurrentConnections?: number
+  connectionsPerMinute?: number
   active?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -544,6 +602,8 @@ export type PlanUncheckedCreateWithoutSubscriptionsInput = {
   bandwidthLimitBytes?: bigint | number | null
   deviceLimit?: number
   credentialLimit?: number
+  maxConcurrentConnections?: number
+  connectionsPerMinute?: number
   active?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -573,6 +633,8 @@ export type PlanUpdateWithoutSubscriptionsInput = {
   bandwidthLimitBytes?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   deviceLimit?: Prisma.IntFieldUpdateOperationsInput | number
   credentialLimit?: Prisma.IntFieldUpdateOperationsInput | number
+  maxConcurrentConnections?: Prisma.IntFieldUpdateOperationsInput | number
+  connectionsPerMinute?: Prisma.IntFieldUpdateOperationsInput | number
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -586,6 +648,8 @@ export type PlanUncheckedUpdateWithoutSubscriptionsInput = {
   bandwidthLimitBytes?: Prisma.NullableBigIntFieldUpdateOperationsInput | bigint | number | null
   deviceLimit?: Prisma.IntFieldUpdateOperationsInput | number
   credentialLimit?: Prisma.IntFieldUpdateOperationsInput | number
+  maxConcurrentConnections?: Prisma.IntFieldUpdateOperationsInput | number
+  connectionsPerMinute?: Prisma.IntFieldUpdateOperationsInput | number
   active?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -630,6 +694,8 @@ export type PlanSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   bandwidthLimitBytes?: boolean
   deviceLimit?: boolean
   credentialLimit?: boolean
+  maxConcurrentConnections?: boolean
+  connectionsPerMinute?: boolean
   active?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -645,6 +711,8 @@ export type PlanSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   bandwidthLimitBytes?: boolean
   deviceLimit?: boolean
   credentialLimit?: boolean
+  maxConcurrentConnections?: boolean
+  connectionsPerMinute?: boolean
   active?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -658,6 +726,8 @@ export type PlanSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   bandwidthLimitBytes?: boolean
   deviceLimit?: boolean
   credentialLimit?: boolean
+  maxConcurrentConnections?: boolean
+  connectionsPerMinute?: boolean
   active?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -671,12 +741,14 @@ export type PlanSelectScalar = {
   bandwidthLimitBytes?: boolean
   deviceLimit?: boolean
   credentialLimit?: boolean
+  maxConcurrentConnections?: boolean
+  connectionsPerMinute?: boolean
   active?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type PlanOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "code" | "monthlyPriceCents" | "bandwidthLimitBytes" | "deviceLimit" | "credentialLimit" | "active" | "createdAt" | "updatedAt", ExtArgs["result"]["plan"]>
+export type PlanOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "code" | "monthlyPriceCents" | "bandwidthLimitBytes" | "deviceLimit" | "credentialLimit" | "maxConcurrentConnections" | "connectionsPerMinute" | "active" | "createdAt" | "updatedAt", ExtArgs["result"]["plan"]>
 export type PlanInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   subscriptions?: boolean | Prisma.Plan$subscriptionsArgs<ExtArgs>
   _count?: boolean | Prisma.PlanCountOutputTypeDefaultArgs<ExtArgs>
@@ -697,6 +769,8 @@ export type $PlanPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     bandwidthLimitBytes: bigint | null
     deviceLimit: number
     credentialLimit: number
+    maxConcurrentConnections: number
+    connectionsPerMinute: number
     active: boolean
     createdAt: Date
     updatedAt: Date
@@ -1131,6 +1205,8 @@ export interface PlanFieldRefs {
   readonly bandwidthLimitBytes: Prisma.FieldRef<"Plan", 'BigInt'>
   readonly deviceLimit: Prisma.FieldRef<"Plan", 'Int'>
   readonly credentialLimit: Prisma.FieldRef<"Plan", 'Int'>
+  readonly maxConcurrentConnections: Prisma.FieldRef<"Plan", 'Int'>
+  readonly connectionsPerMinute: Prisma.FieldRef<"Plan", 'Int'>
   readonly active: Prisma.FieldRef<"Plan", 'Boolean'>
   readonly createdAt: Prisma.FieldRef<"Plan", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Plan", 'DateTime'>

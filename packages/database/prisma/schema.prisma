@@ -143,8 +143,10 @@ model Plan {
   monthlyPriceCents   Int      @map("monthly_price_cents")
   bandwidthLimitBytes BigInt?  @map("bandwidth_limit_bytes")
   deviceLimit         Int      @default(1) @map("device_limit")
-  credentialLimit     Int      @default(1) @map("credential_limit")
-  active              Boolean  @default(true)
+  credentialLimit          Int      @default(1) @map("credential_limit")
+  maxConcurrentConnections Int      @default(3) @map("max_concurrent_connections")
+  connectionsPerMinute     Int      @default(60) @map("connections_per_minute")
+  active                  Boolean  @default(true)
   createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt           DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 

@@ -7,10 +7,12 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/francisdavid7/nexus-proxy/services/proxy-engine/internal/auth"
+	"github.com/francisdavid7/nexus-proxy/services/proxy-engine/internal/ratelimit"
 	"github.com/francisdavid7/nexus-proxy/services/proxy-engine/internal/usage"
 )
 
@@ -18,6 +20,7 @@ type Handler struct {
 	logger         *slog.Logger
 	authenticator  *auth.Authenticator
 	usageRecorder  *usage.PostgresRecorder
+	rateLimiter    *ratelimit.RedisLimiter
 	validator      *DestinationValidator
 	transport      *http.Transport
 	connectTimeout time.Duration
@@ -48,6 +51,7 @@ func NewHandler(
 	logger *slog.Logger,
 	authenticator *auth.Authenticator,
 	usageRecorder *usage.PostgresRecorder,
+	rateLimiter *ratelimit.RedisLimiter,
 	validator *DestinationValidator,
 	connectTimeout time.Duration,
 ) *Handler {
@@ -72,6 +76,7 @@ func NewHandler(
 		logger:         logger,
 		authenticator:  authenticator,
 		usageRecorder:  usageRecorder,
+		rateLimiter:    rateLimiter,
 		validator:      validator,
 		transport:      transport,
 		connectTimeout: connectTimeout,
@@ -119,6 +124,45 @@ func (h *Handler) ServeHTTP(
 	}
 
 	request.Header.Del("Proxy-Authorization")
+
+	decision, err := h.rateLimiter.Allow(
+		request.Context(),
+		principal.CredentialID,
+		principal.ConnectionsPerMinute,
+	)
+
+	if err != nil {
+		h.logger.Error(
+			"connection rate limiter failed",
+			slog.String("error", err.Error()),
+		)
+
+		http.Error(
+			writer,
+			"proxy admission service unavailable",
+			http.StatusServiceUnavailable,
+		)
+
+		return
+	}
+
+	if !decision.Allowed {
+		writer.Header().Set(
+			"Retry-After",
+			strconv.FormatInt(
+				int64(decision.RetryAfter.Seconds()),
+				10,
+			),
+		)
+
+		http.Error(
+			writer,
+			"proxy connection rate limit exceeded",
+			http.StatusTooManyRequests,
+		)
+
+		return
+	}
 
 	if request.Method == http.MethodConnect {
 		h.handleConnect(
