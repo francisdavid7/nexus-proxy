@@ -81,6 +81,24 @@ export async function GET(
 
     const now = new Date();
 
+    const staleAfterSeconds =
+      Number.parseInt(
+        process.env.NODE_STALE_AFTER_SECONDS ??
+          "90",
+        10,
+      );
+
+    const nodeFreshnessCutoff =
+      new Date(
+        now.getTime() -
+          (
+            Number.isNaN(staleAfterSeconds)
+              ? 90
+              : staleAfterSeconds
+          ) *
+            1000,
+      );
+
     const [
       subscription,
       credentials,
@@ -185,6 +203,10 @@ export async function GET(
         where: {
           status: "ONLINE",
 
+          lastHeartbeatAt: {
+            gte: nodeFreshnessCutoff,
+          },
+
           publicIp: {
             not: null,
           },
@@ -224,6 +246,7 @@ export async function GET(
           protocols: true,
           activeConnections: true,
           maxConnections: true,
+          lastHeartbeatAt: true,
 
           location: {
             select: {
@@ -241,7 +264,11 @@ export async function GET(
 
     const availableNodes =
       nodes.flatMap((node) => {
-        if (!node.publicIp) {
+        if (
+          !node.publicIp ||
+          node.activeConnections >=
+            node.maxConnections
+        ) {
           return [];
         }
 

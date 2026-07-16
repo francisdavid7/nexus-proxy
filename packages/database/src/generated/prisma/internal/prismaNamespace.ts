@@ -395,6 +395,7 @@ export const ModelName = {
   Device: 'Device',
   ProxyCredential: 'ProxyCredential',
   ApiKey: 'ApiKey',
+  NodeAgentKey: 'NodeAgentKey',
   ConnectionSession: 'ConnectionSession',
   UsageRecord: 'UsageRecord',
   AuditLog: 'AuditLog',
@@ -414,7 +415,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "authSession" | "organization" | "organizationMember" | "plan" | "subscription" | "location" | "proxyNode" | "device" | "proxyCredential" | "apiKey" | "connectionSession" | "usageRecord" | "auditLog" | "securityEvent"
+    modelProps: "user" | "authSession" | "organization" | "organizationMember" | "plan" | "subscription" | "location" | "proxyNode" | "device" | "proxyCredential" | "apiKey" | "nodeAgentKey" | "connectionSession" | "usageRecord" | "auditLog" | "securityEvent"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1232,6 +1233,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    NodeAgentKey: {
+      payload: Prisma.$NodeAgentKeyPayload<ExtArgs>
+      fields: Prisma.NodeAgentKeyFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.NodeAgentKeyFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NodeAgentKeyPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.NodeAgentKeyFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NodeAgentKeyPayload>
+        }
+        findFirst: {
+          args: Prisma.NodeAgentKeyFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NodeAgentKeyPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.NodeAgentKeyFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NodeAgentKeyPayload>
+        }
+        findMany: {
+          args: Prisma.NodeAgentKeyFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NodeAgentKeyPayload>[]
+        }
+        create: {
+          args: Prisma.NodeAgentKeyCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NodeAgentKeyPayload>
+        }
+        createMany: {
+          args: Prisma.NodeAgentKeyCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.NodeAgentKeyCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NodeAgentKeyPayload>[]
+        }
+        delete: {
+          args: Prisma.NodeAgentKeyDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NodeAgentKeyPayload>
+        }
+        update: {
+          args: Prisma.NodeAgentKeyUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NodeAgentKeyPayload>
+        }
+        deleteMany: {
+          args: Prisma.NodeAgentKeyDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.NodeAgentKeyUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.NodeAgentKeyUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NodeAgentKeyPayload>[]
+        }
+        upsert: {
+          args: Prisma.NodeAgentKeyUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$NodeAgentKeyPayload>
+        }
+        aggregate: {
+          args: Prisma.NodeAgentKeyAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateNodeAgentKey>
+        }
+        groupBy: {
+          args: Prisma.NodeAgentKeyGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.NodeAgentKeyGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.NodeAgentKeyCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.NodeAgentKeyCountAggregateOutputType> | number
+        }
+      }
+    }
     ConnectionSession: {
       payload: Prisma.$ConnectionSessionPayload<ExtArgs>
       fields: Prisma.ConnectionSessionFieldRefs
@@ -1742,6 +1817,21 @@ export const ApiKeyScalarFieldEnum = {
 export type ApiKeyScalarFieldEnum = (typeof ApiKeyScalarFieldEnum)[keyof typeof ApiKeyScalarFieldEnum]
 
 
+export const NodeAgentKeyScalarFieldEnum = {
+  id: 'id',
+  nodeId: 'nodeId',
+  keyId: 'keyId',
+  publicKeyPem: 'publicKeyPem',
+  status: 'status',
+  lastUsedAt: 'lastUsedAt',
+  revokedAt: 'revokedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type NodeAgentKeyScalarFieldEnum = (typeof NodeAgentKeyScalarFieldEnum)[keyof typeof NodeAgentKeyScalarFieldEnum]
+
+
 export const ConnectionSessionScalarFieldEnum = {
   id: 'id',
   organizationId: 'organizationId',
@@ -2048,6 +2138,20 @@ export type ListEnumCredentialStatusFieldRefInput<$PrismaModel> = FieldRefInputT
 
 
 /**
+ * Reference to a field of type 'NodeAgentKeyStatus'
+ */
+export type EnumNodeAgentKeyStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'NodeAgentKeyStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'NodeAgentKeyStatus[]'
+ */
+export type ListEnumNodeAgentKeyStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'NodeAgentKeyStatus[]'>
+    
+
+
+/**
  * Reference to a field of type 'SessionStatus'
  */
 export type EnumSessionStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'SessionStatus'>
@@ -2209,6 +2313,7 @@ export type GlobalOmitConfig = {
   device?: Prisma.DeviceOmit
   proxyCredential?: Prisma.ProxyCredentialOmit
   apiKey?: Prisma.ApiKeyOmit
+  nodeAgentKey?: Prisma.NodeAgentKeyOmit
   connectionSession?: Prisma.ConnectionSessionOmit
   usageRecord?: Prisma.UsageRecordOmit
   auditLog?: Prisma.AuditLogOmit

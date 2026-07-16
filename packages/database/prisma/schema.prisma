@@ -1,10 +1,10 @@
 generator client {
-  provider = "prisma-client"
-  output = "../src/generated/prisma"
-  moduleFormat = "esm"
-  runtime = "nodejs"
+  provider               = "prisma-client"
+  output                 = "../src/generated/prisma"
+  moduleFormat           = "esm"
+  runtime                = "nodejs"
   generatedFileExtension = "ts"
-  importFileExtension = ""
+  importFileExtension    = ""
 }
 
 datasource db {
@@ -56,6 +56,11 @@ enum NodeStatus {
   DEGRADED
   OFFLINE
   MAINTENANCE
+}
+
+enum NodeAgentKeyStatus {
+  ACTIVE
+  REVOKED
 }
 
 enum ProxyProtocol {
@@ -234,6 +239,7 @@ model ProxyNode {
   sessions       ConnectionSession[]
   usageRecords   UsageRecord[]
   securityEvents SecurityEvent[]
+  agentKeys      NodeAgentKey[]
 
   @@index([locationId, status])
   @@index([status])
@@ -309,6 +315,23 @@ model ApiKey {
   @@index([organizationId])
   @@index([userId])
   @@map("api_keys")
+}
+
+model NodeAgentKey {
+  id           String             @id @default(uuid()) @db.Uuid
+  nodeId       String             @map("node_id") @db.Uuid
+  keyId        String             @unique @map("key_id") @db.VarChar(80)
+  publicKeyPem String             @map("public_key_pem") @db.Text
+  status       NodeAgentKeyStatus @default(ACTIVE)
+  lastUsedAt   DateTime?          @map("last_used_at") @db.Timestamptz(6)
+  revokedAt    DateTime?          @map("revoked_at") @db.Timestamptz(6)
+  createdAt    DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+
+  node ProxyNode @relation(fields: [nodeId], references: [id], onDelete: Cascade)
+
+  @@index([nodeId, status])
+  @@map("node_agent_keys")
 }
 
 model ConnectionSession {

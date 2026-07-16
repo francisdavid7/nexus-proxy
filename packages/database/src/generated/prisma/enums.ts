@@ -77,6 +77,14 @@ export const NodeStatus = {
 export type NodeStatus = (typeof NodeStatus)[keyof typeof NodeStatus]
 
 
+export const NodeAgentKeyStatus = {
+  ACTIVE: 'ACTIVE',
+  REVOKED: 'REVOKED'
+} as const
+
+export type NodeAgentKeyStatus = (typeof NodeAgentKeyStatus)[keyof typeof NodeAgentKeyStatus]
+
+
 export const ProxyProtocol = {
   HTTP: 'HTTP',
   HTTPS: 'HTTPS',

@@ -426,6 +426,23 @@ export type EnumCredentialStatusWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedEnumCredentialStatusFilter<$PrismaModel>
 }
 
+export type EnumNodeAgentKeyStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.NodeAgentKeyStatus | Prisma.EnumNodeAgentKeyStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.NodeAgentKeyStatus[] | Prisma.ListEnumNodeAgentKeyStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.NodeAgentKeyStatus[] | Prisma.ListEnumNodeAgentKeyStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumNodeAgentKeyStatusFilter<$PrismaModel> | $Enums.NodeAgentKeyStatus
+}
+
+export type EnumNodeAgentKeyStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.NodeAgentKeyStatus | Prisma.EnumNodeAgentKeyStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.NodeAgentKeyStatus[] | Prisma.ListEnumNodeAgentKeyStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.NodeAgentKeyStatus[] | Prisma.ListEnumNodeAgentKeyStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumNodeAgentKeyStatusWithAggregatesFilter<$PrismaModel> | $Enums.NodeAgentKeyStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumNodeAgentKeyStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumNodeAgentKeyStatusFilter<$PrismaModel>
+}
+
 export type EnumProxyProtocolFilter<$PrismaModel = never> = {
   equals?: $Enums.ProxyProtocol | Prisma.EnumProxyProtocolFieldRefInput<$PrismaModel>
   in?: $Enums.ProxyProtocol[] | Prisma.ListEnumProxyProtocolFieldRefInput<$PrismaModel>
@@ -907,6 +924,23 @@ export type NestedEnumCredentialStatusWithAggregatesFilter<$PrismaModel = never>
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumCredentialStatusFilter<$PrismaModel>
   _max?: Prisma.NestedEnumCredentialStatusFilter<$PrismaModel>
+}
+
+export type NestedEnumNodeAgentKeyStatusFilter<$PrismaModel = never> = {
+  equals?: $Enums.NodeAgentKeyStatus | Prisma.EnumNodeAgentKeyStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.NodeAgentKeyStatus[] | Prisma.ListEnumNodeAgentKeyStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.NodeAgentKeyStatus[] | Prisma.ListEnumNodeAgentKeyStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumNodeAgentKeyStatusFilter<$PrismaModel> | $Enums.NodeAgentKeyStatus
+}
+
+export type NestedEnumNodeAgentKeyStatusWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.NodeAgentKeyStatus | Prisma.EnumNodeAgentKeyStatusFieldRefInput<$PrismaModel>
+  in?: $Enums.NodeAgentKeyStatus[] | Prisma.ListEnumNodeAgentKeyStatusFieldRefInput<$PrismaModel>
+  notIn?: $Enums.NodeAgentKeyStatus[] | Prisma.ListEnumNodeAgentKeyStatusFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumNodeAgentKeyStatusWithAggregatesFilter<$PrismaModel> | $Enums.NodeAgentKeyStatus
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumNodeAgentKeyStatusFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumNodeAgentKeyStatusFilter<$PrismaModel>
 }
 
 export type NestedEnumProxyProtocolFilter<$PrismaModel = never> = {

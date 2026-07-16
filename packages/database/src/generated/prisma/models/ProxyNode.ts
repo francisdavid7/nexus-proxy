@@ -324,6 +324,7 @@ export type ProxyNodeWhereInput = {
   sessions?: Prisma.ConnectionSessionListRelationFilter
   usageRecords?: Prisma.UsageRecordListRelationFilter
   securityEvents?: Prisma.SecurityEventListRelationFilter
+  agentKeys?: Prisma.NodeAgentKeyListRelationFilter
 }
 
 export type ProxyNodeOrderByWithRelationInput = {
@@ -348,6 +349,7 @@ export type ProxyNodeOrderByWithRelationInput = {
   sessions?: Prisma.ConnectionSessionOrderByRelationAggregateInput
   usageRecords?: Prisma.UsageRecordOrderByRelationAggregateInput
   securityEvents?: Prisma.SecurityEventOrderByRelationAggregateInput
+  agentKeys?: Prisma.NodeAgentKeyOrderByRelationAggregateInput
 }
 
 export type ProxyNodeWhereUniqueInput = Prisma.AtLeast<{
@@ -375,6 +377,7 @@ export type ProxyNodeWhereUniqueInput = Prisma.AtLeast<{
   sessions?: Prisma.ConnectionSessionListRelationFilter
   usageRecords?: Prisma.UsageRecordListRelationFilter
   securityEvents?: Prisma.SecurityEventListRelationFilter
+  agentKeys?: Prisma.NodeAgentKeyListRelationFilter
 }, "id" | "name" | "hostname">
 
 export type ProxyNodeOrderByWithAggregationInput = {
@@ -446,6 +449,7 @@ export type ProxyNodeCreateInput = {
   sessions?: Prisma.ConnectionSessionCreateNestedManyWithoutNodeInput
   usageRecords?: Prisma.UsageRecordCreateNestedManyWithoutNodeInput
   securityEvents?: Prisma.SecurityEventCreateNestedManyWithoutNodeInput
+  agentKeys?: Prisma.NodeAgentKeyCreateNestedManyWithoutNodeInput
 }
 
 export type ProxyNodeUncheckedCreateInput = {
@@ -469,6 +473,7 @@ export type ProxyNodeUncheckedCreateInput = {
   sessions?: Prisma.ConnectionSessionUncheckedCreateNestedManyWithoutNodeInput
   usageRecords?: Prisma.UsageRecordUncheckedCreateNestedManyWithoutNodeInput
   securityEvents?: Prisma.SecurityEventUncheckedCreateNestedManyWithoutNodeInput
+  agentKeys?: Prisma.NodeAgentKeyUncheckedCreateNestedManyWithoutNodeInput
 }
 
 export type ProxyNodeUpdateInput = {
@@ -492,6 +497,7 @@ export type ProxyNodeUpdateInput = {
   sessions?: Prisma.ConnectionSessionUpdateManyWithoutNodeNestedInput
   usageRecords?: Prisma.UsageRecordUpdateManyWithoutNodeNestedInput
   securityEvents?: Prisma.SecurityEventUpdateManyWithoutNodeNestedInput
+  agentKeys?: Prisma.NodeAgentKeyUpdateManyWithoutNodeNestedInput
 }
 
 export type ProxyNodeUncheckedUpdateInput = {
@@ -515,6 +521,7 @@ export type ProxyNodeUncheckedUpdateInput = {
   sessions?: Prisma.ConnectionSessionUncheckedUpdateManyWithoutNodeNestedInput
   usageRecords?: Prisma.UsageRecordUncheckedUpdateManyWithoutNodeNestedInput
   securityEvents?: Prisma.SecurityEventUncheckedUpdateManyWithoutNodeNestedInput
+  agentKeys?: Prisma.NodeAgentKeyUncheckedUpdateManyWithoutNodeNestedInput
 }
 
 export type ProxyNodeCreateManyInput = {
@@ -731,6 +738,20 @@ export type EnumNodeStatusFieldUpdateOperationsInput = {
   set?: $Enums.NodeStatus
 }
 
+export type ProxyNodeCreateNestedOneWithoutAgentKeysInput = {
+  create?: Prisma.XOR<Prisma.ProxyNodeCreateWithoutAgentKeysInput, Prisma.ProxyNodeUncheckedCreateWithoutAgentKeysInput>
+  connectOrCreate?: Prisma.ProxyNodeCreateOrConnectWithoutAgentKeysInput
+  connect?: Prisma.ProxyNodeWhereUniqueInput
+}
+
+export type ProxyNodeUpdateOneRequiredWithoutAgentKeysNestedInput = {
+  create?: Prisma.XOR<Prisma.ProxyNodeCreateWithoutAgentKeysInput, Prisma.ProxyNodeUncheckedCreateWithoutAgentKeysInput>
+  connectOrCreate?: Prisma.ProxyNodeCreateOrConnectWithoutAgentKeysInput
+  upsert?: Prisma.ProxyNodeUpsertWithoutAgentKeysInput
+  connect?: Prisma.ProxyNodeWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.ProxyNodeUpdateToOneWithWhereWithoutAgentKeysInput, Prisma.ProxyNodeUpdateWithoutAgentKeysInput>, Prisma.ProxyNodeUncheckedUpdateWithoutAgentKeysInput>
+}
+
 export type ProxyNodeCreateNestedOneWithoutSessionsInput = {
   create?: Prisma.XOR<Prisma.ProxyNodeCreateWithoutSessionsInput, Prisma.ProxyNodeUncheckedCreateWithoutSessionsInput>
   connectOrCreate?: Prisma.ProxyNodeCreateOrConnectWithoutSessionsInput
@@ -795,6 +816,7 @@ export type ProxyNodeCreateWithoutLocationInput = {
   sessions?: Prisma.ConnectionSessionCreateNestedManyWithoutNodeInput
   usageRecords?: Prisma.UsageRecordCreateNestedManyWithoutNodeInput
   securityEvents?: Prisma.SecurityEventCreateNestedManyWithoutNodeInput
+  agentKeys?: Prisma.NodeAgentKeyCreateNestedManyWithoutNodeInput
 }
 
 export type ProxyNodeUncheckedCreateWithoutLocationInput = {
@@ -817,6 +839,7 @@ export type ProxyNodeUncheckedCreateWithoutLocationInput = {
   sessions?: Prisma.ConnectionSessionUncheckedCreateNestedManyWithoutNodeInput
   usageRecords?: Prisma.UsageRecordUncheckedCreateNestedManyWithoutNodeInput
   securityEvents?: Prisma.SecurityEventUncheckedCreateNestedManyWithoutNodeInput
+  agentKeys?: Prisma.NodeAgentKeyUncheckedCreateNestedManyWithoutNodeInput
 }
 
 export type ProxyNodeCreateOrConnectWithoutLocationInput = {
@@ -868,6 +891,114 @@ export type ProxyNodeScalarWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"ProxyNode"> | Date | string
 }
 
+export type ProxyNodeCreateWithoutAgentKeysInput = {
+  id?: string
+  name: string
+  hostname: string
+  publicIp?: string | null
+  httpPort?: number
+  tlsPort?: number
+  socksPort?: number
+  protocols?: Prisma.ProxyNodeCreateprotocolsInput | $Enums.ProxyProtocol[]
+  status?: $Enums.NodeStatus
+  maxConnections?: number
+  activeConnections?: number
+  version?: string | null
+  lastHeartbeatAt?: Date | string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  location: Prisma.LocationCreateNestedOneWithoutNodesInput
+  sessions?: Prisma.ConnectionSessionCreateNestedManyWithoutNodeInput
+  usageRecords?: Prisma.UsageRecordCreateNestedManyWithoutNodeInput
+  securityEvents?: Prisma.SecurityEventCreateNestedManyWithoutNodeInput
+}
+
+export type ProxyNodeUncheckedCreateWithoutAgentKeysInput = {
+  id?: string
+  locationId: string
+  name: string
+  hostname: string
+  publicIp?: string | null
+  httpPort?: number
+  tlsPort?: number
+  socksPort?: number
+  protocols?: Prisma.ProxyNodeCreateprotocolsInput | $Enums.ProxyProtocol[]
+  status?: $Enums.NodeStatus
+  maxConnections?: number
+  activeConnections?: number
+  version?: string | null
+  lastHeartbeatAt?: Date | string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  sessions?: Prisma.ConnectionSessionUncheckedCreateNestedManyWithoutNodeInput
+  usageRecords?: Prisma.UsageRecordUncheckedCreateNestedManyWithoutNodeInput
+  securityEvents?: Prisma.SecurityEventUncheckedCreateNestedManyWithoutNodeInput
+}
+
+export type ProxyNodeCreateOrConnectWithoutAgentKeysInput = {
+  where: Prisma.ProxyNodeWhereUniqueInput
+  create: Prisma.XOR<Prisma.ProxyNodeCreateWithoutAgentKeysInput, Prisma.ProxyNodeUncheckedCreateWithoutAgentKeysInput>
+}
+
+export type ProxyNodeUpsertWithoutAgentKeysInput = {
+  update: Prisma.XOR<Prisma.ProxyNodeUpdateWithoutAgentKeysInput, Prisma.ProxyNodeUncheckedUpdateWithoutAgentKeysInput>
+  create: Prisma.XOR<Prisma.ProxyNodeCreateWithoutAgentKeysInput, Prisma.ProxyNodeUncheckedCreateWithoutAgentKeysInput>
+  where?: Prisma.ProxyNodeWhereInput
+}
+
+export type ProxyNodeUpdateToOneWithWhereWithoutAgentKeysInput = {
+  where?: Prisma.ProxyNodeWhereInput
+  data: Prisma.XOR<Prisma.ProxyNodeUpdateWithoutAgentKeysInput, Prisma.ProxyNodeUncheckedUpdateWithoutAgentKeysInput>
+}
+
+export type ProxyNodeUpdateWithoutAgentKeysInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  hostname?: Prisma.StringFieldUpdateOperationsInput | string
+  publicIp?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  httpPort?: Prisma.IntFieldUpdateOperationsInput | number
+  tlsPort?: Prisma.IntFieldUpdateOperationsInput | number
+  socksPort?: Prisma.IntFieldUpdateOperationsInput | number
+  protocols?: Prisma.ProxyNodeUpdateprotocolsInput | $Enums.ProxyProtocol[]
+  status?: Prisma.EnumNodeStatusFieldUpdateOperationsInput | $Enums.NodeStatus
+  maxConnections?: Prisma.IntFieldUpdateOperationsInput | number
+  activeConnections?: Prisma.IntFieldUpdateOperationsInput | number
+  version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastHeartbeatAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  location?: Prisma.LocationUpdateOneRequiredWithoutNodesNestedInput
+  sessions?: Prisma.ConnectionSessionUpdateManyWithoutNodeNestedInput
+  usageRecords?: Prisma.UsageRecordUpdateManyWithoutNodeNestedInput
+  securityEvents?: Prisma.SecurityEventUpdateManyWithoutNodeNestedInput
+}
+
+export type ProxyNodeUncheckedUpdateWithoutAgentKeysInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  locationId?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  hostname?: Prisma.StringFieldUpdateOperationsInput | string
+  publicIp?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  httpPort?: Prisma.IntFieldUpdateOperationsInput | number
+  tlsPort?: Prisma.IntFieldUpdateOperationsInput | number
+  socksPort?: Prisma.IntFieldUpdateOperationsInput | number
+  protocols?: Prisma.ProxyNodeUpdateprotocolsInput | $Enums.ProxyProtocol[]
+  status?: Prisma.EnumNodeStatusFieldUpdateOperationsInput | $Enums.NodeStatus
+  maxConnections?: Prisma.IntFieldUpdateOperationsInput | number
+  activeConnections?: Prisma.IntFieldUpdateOperationsInput | number
+  version?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  lastHeartbeatAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  metadata?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  sessions?: Prisma.ConnectionSessionUncheckedUpdateManyWithoutNodeNestedInput
+  usageRecords?: Prisma.UsageRecordUncheckedUpdateManyWithoutNodeNestedInput
+  securityEvents?: Prisma.SecurityEventUncheckedUpdateManyWithoutNodeNestedInput
+}
+
 export type ProxyNodeCreateWithoutSessionsInput = {
   id?: string
   name: string
@@ -888,6 +1019,7 @@ export type ProxyNodeCreateWithoutSessionsInput = {
   location: Prisma.LocationCreateNestedOneWithoutNodesInput
   usageRecords?: Prisma.UsageRecordCreateNestedManyWithoutNodeInput
   securityEvents?: Prisma.SecurityEventCreateNestedManyWithoutNodeInput
+  agentKeys?: Prisma.NodeAgentKeyCreateNestedManyWithoutNodeInput
 }
 
 export type ProxyNodeUncheckedCreateWithoutSessionsInput = {
@@ -910,6 +1042,7 @@ export type ProxyNodeUncheckedCreateWithoutSessionsInput = {
   updatedAt?: Date | string
   usageRecords?: Prisma.UsageRecordUncheckedCreateNestedManyWithoutNodeInput
   securityEvents?: Prisma.SecurityEventUncheckedCreateNestedManyWithoutNodeInput
+  agentKeys?: Prisma.NodeAgentKeyUncheckedCreateNestedManyWithoutNodeInput
 }
 
 export type ProxyNodeCreateOrConnectWithoutSessionsInput = {
@@ -948,6 +1081,7 @@ export type ProxyNodeUpdateWithoutSessionsInput = {
   location?: Prisma.LocationUpdateOneRequiredWithoutNodesNestedInput
   usageRecords?: Prisma.UsageRecordUpdateManyWithoutNodeNestedInput
   securityEvents?: Prisma.SecurityEventUpdateManyWithoutNodeNestedInput
+  agentKeys?: Prisma.NodeAgentKeyUpdateManyWithoutNodeNestedInput
 }
 
 export type ProxyNodeUncheckedUpdateWithoutSessionsInput = {
@@ -970,6 +1104,7 @@ export type ProxyNodeUncheckedUpdateWithoutSessionsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   usageRecords?: Prisma.UsageRecordUncheckedUpdateManyWithoutNodeNestedInput
   securityEvents?: Prisma.SecurityEventUncheckedUpdateManyWithoutNodeNestedInput
+  agentKeys?: Prisma.NodeAgentKeyUncheckedUpdateManyWithoutNodeNestedInput
 }
 
 export type ProxyNodeCreateWithoutUsageRecordsInput = {
@@ -992,6 +1127,7 @@ export type ProxyNodeCreateWithoutUsageRecordsInput = {
   location: Prisma.LocationCreateNestedOneWithoutNodesInput
   sessions?: Prisma.ConnectionSessionCreateNestedManyWithoutNodeInput
   securityEvents?: Prisma.SecurityEventCreateNestedManyWithoutNodeInput
+  agentKeys?: Prisma.NodeAgentKeyCreateNestedManyWithoutNodeInput
 }
 
 export type ProxyNodeUncheckedCreateWithoutUsageRecordsInput = {
@@ -1014,6 +1150,7 @@ export type ProxyNodeUncheckedCreateWithoutUsageRecordsInput = {
   updatedAt?: Date | string
   sessions?: Prisma.ConnectionSessionUncheckedCreateNestedManyWithoutNodeInput
   securityEvents?: Prisma.SecurityEventUncheckedCreateNestedManyWithoutNodeInput
+  agentKeys?: Prisma.NodeAgentKeyUncheckedCreateNestedManyWithoutNodeInput
 }
 
 export type ProxyNodeCreateOrConnectWithoutUsageRecordsInput = {
@@ -1052,6 +1189,7 @@ export type ProxyNodeUpdateWithoutUsageRecordsInput = {
   location?: Prisma.LocationUpdateOneRequiredWithoutNodesNestedInput
   sessions?: Prisma.ConnectionSessionUpdateManyWithoutNodeNestedInput
   securityEvents?: Prisma.SecurityEventUpdateManyWithoutNodeNestedInput
+  agentKeys?: Prisma.NodeAgentKeyUpdateManyWithoutNodeNestedInput
 }
 
 export type ProxyNodeUncheckedUpdateWithoutUsageRecordsInput = {
@@ -1074,6 +1212,7 @@ export type ProxyNodeUncheckedUpdateWithoutUsageRecordsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sessions?: Prisma.ConnectionSessionUncheckedUpdateManyWithoutNodeNestedInput
   securityEvents?: Prisma.SecurityEventUncheckedUpdateManyWithoutNodeNestedInput
+  agentKeys?: Prisma.NodeAgentKeyUncheckedUpdateManyWithoutNodeNestedInput
 }
 
 export type ProxyNodeCreateWithoutSecurityEventsInput = {
@@ -1096,6 +1235,7 @@ export type ProxyNodeCreateWithoutSecurityEventsInput = {
   location: Prisma.LocationCreateNestedOneWithoutNodesInput
   sessions?: Prisma.ConnectionSessionCreateNestedManyWithoutNodeInput
   usageRecords?: Prisma.UsageRecordCreateNestedManyWithoutNodeInput
+  agentKeys?: Prisma.NodeAgentKeyCreateNestedManyWithoutNodeInput
 }
 
 export type ProxyNodeUncheckedCreateWithoutSecurityEventsInput = {
@@ -1118,6 +1258,7 @@ export type ProxyNodeUncheckedCreateWithoutSecurityEventsInput = {
   updatedAt?: Date | string
   sessions?: Prisma.ConnectionSessionUncheckedCreateNestedManyWithoutNodeInput
   usageRecords?: Prisma.UsageRecordUncheckedCreateNestedManyWithoutNodeInput
+  agentKeys?: Prisma.NodeAgentKeyUncheckedCreateNestedManyWithoutNodeInput
 }
 
 export type ProxyNodeCreateOrConnectWithoutSecurityEventsInput = {
@@ -1156,6 +1297,7 @@ export type ProxyNodeUpdateWithoutSecurityEventsInput = {
   location?: Prisma.LocationUpdateOneRequiredWithoutNodesNestedInput
   sessions?: Prisma.ConnectionSessionUpdateManyWithoutNodeNestedInput
   usageRecords?: Prisma.UsageRecordUpdateManyWithoutNodeNestedInput
+  agentKeys?: Prisma.NodeAgentKeyUpdateManyWithoutNodeNestedInput
 }
 
 export type ProxyNodeUncheckedUpdateWithoutSecurityEventsInput = {
@@ -1178,6 +1320,7 @@ export type ProxyNodeUncheckedUpdateWithoutSecurityEventsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   sessions?: Prisma.ConnectionSessionUncheckedUpdateManyWithoutNodeNestedInput
   usageRecords?: Prisma.UsageRecordUncheckedUpdateManyWithoutNodeNestedInput
+  agentKeys?: Prisma.NodeAgentKeyUncheckedUpdateManyWithoutNodeNestedInput
 }
 
 export type ProxyNodeCreateManyLocationInput = {
@@ -1219,6 +1362,7 @@ export type ProxyNodeUpdateWithoutLocationInput = {
   sessions?: Prisma.ConnectionSessionUpdateManyWithoutNodeNestedInput
   usageRecords?: Prisma.UsageRecordUpdateManyWithoutNodeNestedInput
   securityEvents?: Prisma.SecurityEventUpdateManyWithoutNodeNestedInput
+  agentKeys?: Prisma.NodeAgentKeyUpdateManyWithoutNodeNestedInput
 }
 
 export type ProxyNodeUncheckedUpdateWithoutLocationInput = {
@@ -1241,6 +1385,7 @@ export type ProxyNodeUncheckedUpdateWithoutLocationInput = {
   sessions?: Prisma.ConnectionSessionUncheckedUpdateManyWithoutNodeNestedInput
   usageRecords?: Prisma.UsageRecordUncheckedUpdateManyWithoutNodeNestedInput
   securityEvents?: Prisma.SecurityEventUncheckedUpdateManyWithoutNodeNestedInput
+  agentKeys?: Prisma.NodeAgentKeyUncheckedUpdateManyWithoutNodeNestedInput
 }
 
 export type ProxyNodeUncheckedUpdateManyWithoutLocationInput = {
@@ -1271,12 +1416,14 @@ export type ProxyNodeCountOutputType = {
   sessions: number
   usageRecords: number
   securityEvents: number
+  agentKeys: number
 }
 
 export type ProxyNodeCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   sessions?: boolean | ProxyNodeCountOutputTypeCountSessionsArgs
   usageRecords?: boolean | ProxyNodeCountOutputTypeCountUsageRecordsArgs
   securityEvents?: boolean | ProxyNodeCountOutputTypeCountSecurityEventsArgs
+  agentKeys?: boolean | ProxyNodeCountOutputTypeCountAgentKeysArgs
 }
 
 /**
@@ -1310,6 +1457,13 @@ export type ProxyNodeCountOutputTypeCountSecurityEventsArgs<ExtArgs extends runt
   where?: Prisma.SecurityEventWhereInput
 }
 
+/**
+ * ProxyNodeCountOutputType without action
+ */
+export type ProxyNodeCountOutputTypeCountAgentKeysArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.NodeAgentKeyWhereInput
+}
+
 
 export type ProxyNodeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1333,6 +1487,7 @@ export type ProxyNodeSelect<ExtArgs extends runtime.Types.Extensions.InternalArg
   sessions?: boolean | Prisma.ProxyNode$sessionsArgs<ExtArgs>
   usageRecords?: boolean | Prisma.ProxyNode$usageRecordsArgs<ExtArgs>
   securityEvents?: boolean | Prisma.ProxyNode$securityEventsArgs<ExtArgs>
+  agentKeys?: boolean | Prisma.ProxyNode$agentKeysArgs<ExtArgs>
   _count?: boolean | Prisma.ProxyNodeCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["proxyNode"]>
 
@@ -1404,6 +1559,7 @@ export type ProxyNodeInclude<ExtArgs extends runtime.Types.Extensions.InternalAr
   sessions?: boolean | Prisma.ProxyNode$sessionsArgs<ExtArgs>
   usageRecords?: boolean | Prisma.ProxyNode$usageRecordsArgs<ExtArgs>
   securityEvents?: boolean | Prisma.ProxyNode$securityEventsArgs<ExtArgs>
+  agentKeys?: boolean | Prisma.ProxyNode$agentKeysArgs<ExtArgs>
   _count?: boolean | Prisma.ProxyNodeCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type ProxyNodeIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1420,6 +1576,7 @@ export type $ProxyNodePayload<ExtArgs extends runtime.Types.Extensions.InternalA
     sessions: Prisma.$ConnectionSessionPayload<ExtArgs>[]
     usageRecords: Prisma.$UsageRecordPayload<ExtArgs>[]
     securityEvents: Prisma.$SecurityEventPayload<ExtArgs>[]
+    agentKeys: Prisma.$NodeAgentKeyPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1837,6 +1994,7 @@ export interface Prisma__ProxyNodeClient<T, Null = never, ExtArgs extends runtim
   sessions<T extends Prisma.ProxyNode$sessionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ProxyNode$sessionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ConnectionSessionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   usageRecords<T extends Prisma.ProxyNode$usageRecordsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ProxyNode$usageRecordsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$UsageRecordPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   securityEvents<T extends Prisma.ProxyNode$securityEventsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ProxyNode$securityEventsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SecurityEventPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  agentKeys<T extends Prisma.ProxyNode$agentKeysArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.ProxyNode$agentKeysArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$NodeAgentKeyPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2353,6 +2511,30 @@ export type ProxyNode$securityEventsArgs<ExtArgs extends runtime.Types.Extension
   take?: number
   skip?: number
   distinct?: Prisma.SecurityEventScalarFieldEnum | Prisma.SecurityEventScalarFieldEnum[]
+}
+
+/**
+ * ProxyNode.agentKeys
+ */
+export type ProxyNode$agentKeysArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the NodeAgentKey
+   */
+  select?: Prisma.NodeAgentKeySelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the NodeAgentKey
+   */
+  omit?: Prisma.NodeAgentKeyOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.NodeAgentKeyInclude<ExtArgs> | null
+  where?: Prisma.NodeAgentKeyWhereInput
+  orderBy?: Prisma.NodeAgentKeyOrderByWithRelationInput | Prisma.NodeAgentKeyOrderByWithRelationInput[]
+  cursor?: Prisma.NodeAgentKeyWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.NodeAgentKeyScalarFieldEnum | Prisma.NodeAgentKeyScalarFieldEnum[]
 }
 
 /**

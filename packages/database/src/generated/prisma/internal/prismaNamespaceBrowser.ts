@@ -62,6 +62,7 @@ export const ModelName = {
   Device: 'Device',
   ProxyCredential: 'ProxyCredential',
   ApiKey: 'ApiKey',
+  NodeAgentKey: 'NodeAgentKey',
   ConnectionSession: 'ConnectionSession',
   UsageRecord: 'UsageRecord',
   AuditLog: 'AuditLog',
@@ -257,6 +258,21 @@ export const ApiKeyScalarFieldEnum = {
 } as const
 
 export type ApiKeyScalarFieldEnum = (typeof ApiKeyScalarFieldEnum)[keyof typeof ApiKeyScalarFieldEnum]
+
+
+export const NodeAgentKeyScalarFieldEnum = {
+  id: 'id',
+  nodeId: 'nodeId',
+  keyId: 'keyId',
+  publicKeyPem: 'publicKeyPem',
+  status: 'status',
+  lastUsedAt: 'lastUsedAt',
+  revokedAt: 'revokedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type NodeAgentKeyScalarFieldEnum = (typeof NodeAgentKeyScalarFieldEnum)[keyof typeof NodeAgentKeyScalarFieldEnum]
 
 
 export const ConnectionSessionScalarFieldEnum = {

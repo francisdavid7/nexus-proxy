@@ -73,6 +73,11 @@ export type ProxyCredential = Prisma.ProxyCredentialModel
  */
 export type ApiKey = Prisma.ApiKeyModel
 /**
+ * Model NodeAgentKey
+ * 
+ */
+export type NodeAgentKey = Prisma.NodeAgentKeyModel
+/**
  * Model ConnectionSession
  * 
  */
