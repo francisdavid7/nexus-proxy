@@ -13,6 +13,7 @@ import {
 
 import {
   requireAdministrator,
+  requireStaffUser,
 } from "@/lib/auth/authorization";
 
 import {
@@ -22,6 +23,10 @@ import {
 import {
   createOrganizationSlug,
 } from "@/lib/organizations/slug";
+
+import {
+  listCustomers,
+} from "@/lib/customers/admin-query";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -616,6 +621,125 @@ export async function POST(
       {
         message:
           "The customer could not be created.",
+      },
+      {
+        status: 500,
+      },
+    );
+  }
+}
+
+const listCustomersQuerySchema = z.object({
+  page: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .default(1),
+
+  limit: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(100)
+    .default(20),
+
+  search: z
+    .string()
+    .trim()
+    .max(120)
+    .optional(),
+
+  status: z
+    .enum([
+      "PENDING_VERIFICATION",
+      "ACTIVE",
+      "SUSPENDED",
+      "DISABLED",
+    ])
+    .optional(),
+});
+
+export async function GET(
+  request: Request,
+): Promise<Response> {
+  const authorization =
+    await requireStaffUser();
+
+  if (!authorization.authorized) {
+    return authorization.response;
+  }
+
+  const url = new URL(request.url);
+
+  const validation =
+    listCustomersQuerySchema.safeParse({
+      page:
+        url.searchParams.get("page") ??
+        undefined,
+
+      limit:
+        url.searchParams.get("limit") ??
+        undefined,
+
+      search:
+        url.searchParams.get("search") ??
+        undefined,
+
+      status:
+        url.searchParams.get("status") ??
+        undefined,
+    });
+
+  if (!validation.success) {
+    return Response.json(
+      {
+        message:
+          "The customer query is invalid.",
+
+        errors:
+          validation.error.flatten(),
+      },
+      {
+        status: 400,
+      },
+    );
+  }
+
+  try {
+    const result =
+      await listCustomers({
+        page: validation.data.page,
+        limit: validation.data.limit,
+
+        search:
+          validation.data.search ||
+          undefined,
+
+        status:
+          validation.data.status,
+      });
+
+    return Response.json(
+      result,
+      {
+        status: 200,
+
+        headers: {
+          "Cache-Control":
+            "no-store, max-age=0",
+        },
+      },
+    );
+  } catch (error) {
+    console.error(
+      "Failed to list customers:",
+      error,
+    );
+
+    return Response.json(
+      {
+        message:
+          "The customers could not be loaded.",
       },
       {
         status: 500,
