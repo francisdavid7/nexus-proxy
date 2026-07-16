@@ -1,4 +1,5 @@
 import {
+  OrganizationRole,
   prisma,
 } from "@nexus/database";
 
@@ -11,10 +12,19 @@ export class OrganizationSelectionRequiredError
 export class OrganizationNotFoundError
   extends Error {}
 
+type AccessibleOrganization = {
+  id: string;
+  name: string;
+  slug: string;
+  ownerId: string;
+  createdAt: Date;
+  accessRole: OrganizationRole;
+};
+
 export async function resolveCustomerOrganization(
   userId: string,
   requestedOrganizationId?: string,
-) {
+): Promise<AccessibleOrganization> {
   if (requestedOrganizationId) {
     const organization =
       await prisma.organization.findFirst({
@@ -41,20 +51,46 @@ export async function resolveCustomerOrganization(
           slug: true,
           ownerId: true,
           createdAt: true,
+
+          members: {
+            where: {
+              userId,
+            },
+
+            take: 1,
+
+            select: {
+              role: true,
+            },
+          },
         },
       });
 
     if (!organization) {
-      /*
-       * Return "not found" rather than revealing
-       * that another customer's organization exists.
-       */
       throw new OrganizationNotFoundError(
         "The organization was not found.",
       );
     }
 
-    return organization;
+    const accessRole =
+      organization.ownerId === userId
+        ? OrganizationRole.OWNER
+        : organization.members[0]?.role;
+
+    if (!accessRole) {
+      throw new OrganizationNotFoundError(
+        "The organization was not found.",
+      );
+    }
+
+    return {
+      id: organization.id,
+      name: organization.name,
+      slug: organization.slug,
+      ownerId: organization.ownerId,
+      createdAt: organization.createdAt,
+      accessRole,
+    };
   }
 
   const organizations =
@@ -86,6 +122,18 @@ export async function resolveCustomerOrganization(
         slug: true,
         ownerId: true,
         createdAt: true,
+
+        members: {
+          where: {
+            userId,
+          },
+
+          take: 1,
+
+          select: {
+            role: true,
+          },
+        },
       },
     });
 
@@ -109,5 +157,23 @@ export async function resolveCustomerOrganization(
     );
   }
 
-  return organization;
+  const accessRole =
+    organization.ownerId === userId
+      ? OrganizationRole.OWNER
+      : organization.members[0]?.role;
+
+  if (!accessRole) {
+    throw new CustomerHasNoOrganizationError(
+      "No organization is associated with this account.",
+    );
+  }
+
+  return {
+    id: organization.id,
+    name: organization.name,
+    slug: organization.slug,
+    ownerId: organization.ownerId,
+    createdAt: organization.createdAt,
+    accessRole,
+  };
 }
