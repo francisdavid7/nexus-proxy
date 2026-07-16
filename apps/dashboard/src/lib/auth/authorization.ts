@@ -120,3 +120,25 @@ export async function requireAdministrator():
 
   return authentication;
 }
+
+export async function requireCustomerUser():
+  Promise<AuthorizationResult> {
+  const authentication =
+    await requireAuthenticatedUser();
+
+  if (!authentication.authorized) {
+    return authentication;
+  }
+
+  if (
+    authentication.user.role !==
+    "CUSTOMER"
+  ) {
+    return {
+      authorized: false,
+      response: forbiddenResponse(),
+    };
+  }
+
+  return authentication;
+}
