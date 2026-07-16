@@ -1,7 +1,10 @@
 generator client {
-  provider     = "prisma-client"
-  output       = "../src/generated/prisma"
+  provider = "prisma-client"
+  output = "../src/generated/prisma"
   moduleFormat = "esm"
+  runtime = "nodejs"
+  generatedFileExtension = "ts"
+  importFileExtension = ""
 }
 
 datasource db {
@@ -86,16 +89,31 @@ model User {
   updatedAt       DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   ownedOrganizations Organization[]       @relation("OrganizationOwner")
-  memberships       OrganizationMember[]
-  credentials       ProxyCredential[]
-  devices           Device[]
-  sessions          ConnectionSession[]
-  apiKeys           ApiKey[]
-  usageRecords      UsageRecord[]
-  auditLogs         AuditLog[]            @relation("AuditActor")
-  securityEvents    SecurityEvent[]
+  memberships        OrganizationMember[]
+  credentials        ProxyCredential[]
+  devices            Device[]
+  sessions           ConnectionSession[]
+  apiKeys            ApiKey[]
+  usageRecords       UsageRecord[]
+  auditLogs          AuditLog[]           @relation("AuditActor")
+  securityEvents     SecurityEvent[]
+  authSessions       AuthSession[]
 
   @@map("users")
+}
+
+model AuthSession {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  tokenDigest String   @unique @map("token_digest") @db.VarChar(64)
+  expiresAt   DateTime @map("expires_at") @db.Timestamptz(6)
+  lastSeenAt  DateTime @default(now()) @map("last_seen_at") @db.Timestamptz(6)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, expiresAt])
+  @@map("auth_sessions")
 }
 
 model Organization {
@@ -106,7 +124,7 @@ model Organization {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
-  owner          User                @relation("OrganizationOwner", fields: [ownerId], references: [id], onDelete: Restrict)
+  owner          User                 @relation("OrganizationOwner", fields: [ownerId], references: [id], onDelete: Restrict)
   members        OrganizationMember[]
   subscriptions  Subscription[]
   credentials    ProxyCredential[]
@@ -137,18 +155,18 @@ model OrganizationMember {
 }
 
 model Plan {
-  id                  String   @id @default(uuid()) @db.Uuid
-  name                String   @unique @db.VarChar(80)
-  code                String   @unique @db.VarChar(50)
-  monthlyPriceCents   Int      @map("monthly_price_cents")
-  bandwidthLimitBytes BigInt?  @map("bandwidth_limit_bytes")
-  deviceLimit         Int      @default(1) @map("device_limit")
+  id                       String   @id @default(uuid()) @db.Uuid
+  name                     String   @unique @db.VarChar(80)
+  code                     String   @unique @db.VarChar(50)
+  monthlyPriceCents        Int      @map("monthly_price_cents")
+  bandwidthLimitBytes      BigInt?  @map("bandwidth_limit_bytes")
+  deviceLimit              Int      @default(1) @map("device_limit")
   credentialLimit          Int      @default(1) @map("credential_limit")
   maxConcurrentConnections Int      @default(3) @map("max_concurrent_connections")
   connectionsPerMinute     Int      @default(60) @map("connections_per_minute")
-  active                  Boolean  @default(true)
-  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt           DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
+  active                   Boolean  @default(true)
+  createdAt                DateTime @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                DateTime @updatedAt @map("updated_at") @db.Timestamptz(6)
 
   subscriptions Subscription[]
 
@@ -294,19 +312,19 @@ model ApiKey {
 }
 
 model ConnectionSession {
-  id             String        @id @default(uuid()) @db.Uuid
-  organizationId String        @map("organization_id") @db.Uuid
-  userId         String        @map("user_id") @db.Uuid
-  credentialId   String        @map("credential_id") @db.Uuid
-  nodeId         String        @map("node_id") @db.Uuid
-  deviceId       String?       @map("device_id") @db.Uuid
-  protocol       ProxyProtocol
-  status         SessionStatus @default(ACTIVE)
-  sourceIpDigest String?       @map("source_ip_digest") @db.VarChar(128)
-  bytesUploaded  BigInt        @default(0) @map("bytes_uploaded")
-  bytesDownloaded BigInt       @default(0) @map("bytes_downloaded")
-  startedAt      DateTime      @default(now()) @map("started_at") @db.Timestamptz(6)
-  endedAt        DateTime?     @map("ended_at") @db.Timestamptz(6)
+  id              String        @id @default(uuid()) @db.Uuid
+  organizationId  String        @map("organization_id") @db.Uuid
+  userId          String        @map("user_id") @db.Uuid
+  credentialId    String        @map("credential_id") @db.Uuid
+  nodeId          String        @map("node_id") @db.Uuid
+  deviceId        String?       @map("device_id") @db.Uuid
+  protocol        ProxyProtocol
+  status          SessionStatus @default(ACTIVE)
+  sourceIpDigest  String?       @map("source_ip_digest") @db.VarChar(128)
+  bytesUploaded   BigInt        @default(0) @map("bytes_uploaded")
+  bytesDownloaded BigInt        @default(0) @map("bytes_downloaded")
+  startedAt       DateTime      @default(now()) @map("started_at") @db.Timestamptz(6)
+  endedAt         DateTime?     @map("ended_at") @db.Timestamptz(6)
 
   organization Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
   user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)

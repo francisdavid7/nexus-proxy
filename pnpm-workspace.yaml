@@ -1,10 +1,8 @@
 packages:
   - "apps/*"
-  - "services/*"
   - "packages/*"
+  - "services/*"
+
 allowBuilds:
-  '@prisma/engines': true
-  esbuild: false
-  prisma: false
-  sharp: true
-  unrs-resolver: false
+  "@prisma/engines": true
+  "sharp": true
