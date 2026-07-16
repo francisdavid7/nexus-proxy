@@ -32,7 +32,7 @@ function getSessionTTLDays(): number {
   return configuredValue;
 }
 
-function useSecureCookies(): boolean {
+function shouldUseSecureCookies(): boolean {
   return (
     process.env.COOKIE_SECURE
       ?.trim()
@@ -66,7 +66,7 @@ async function deleteSessionCookie(): Promise<void> {
     name: getCookieName(),
     value: "",
     httpOnly: true,
-    secure: useSecureCookies(),
+    secure: shouldUseSecureCookies(),
     sameSite: "lax",
     path: "/",
     expires: new Date(0),
@@ -114,7 +114,7 @@ export async function createUserSession(
     name: getCookieName(),
     value: rawToken,
     httpOnly: true,
-    secure: useSecureCookies(),
+    secure: shouldUseSecureCookies(),
     sameSite: "lax",
     path: "/",
     expires: expiresAt,
