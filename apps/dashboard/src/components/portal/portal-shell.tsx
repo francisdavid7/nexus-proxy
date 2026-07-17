@@ -16,6 +16,7 @@ import {
   Gauge,
   LogOut,
   Network,
+  ScrollText,
   Server,
   Settings2,
   ShieldCheck,
@@ -48,6 +49,11 @@ const adminNavigation:
       label: "Proxy nodes",
       href: "/admin/nodes",
       icon: Server,
+    },
+    {
+      label: "Audit activity",
+      href: "/admin/audit",
+      icon: ScrollText,
     },
   ];
 

@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import {
   useMemo,
   useState,
@@ -186,9 +188,12 @@ export default function CustomersPage() {
                       className="hover:bg-muted/30"
                     >
                       <td className="px-5 py-4">
-                        <p className="font-medium">
+                        <Link
+                          href={`/admin/customers/${customer.id}`}
+                          className="font-medium hover:underline"
+                        >
                           {customer.fullName}
-                        </p>
+                        </Link>
 
                         <p className="text-muted-foreground">
                           {customer.email}
