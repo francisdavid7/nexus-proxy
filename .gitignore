@@ -18,3 +18,9 @@ coverage
 bin
 tmp
 services/node-agent/.secrets/
+
+# Playwright
+apps/dashboard/.env.e2e
+apps/dashboard/playwright/.auth/
+apps/dashboard/playwright-report/
+apps/dashboard/test-results/
