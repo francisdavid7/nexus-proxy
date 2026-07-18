@@ -7,26 +7,23 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
-	"os"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/francisdavid7/nexus-proxy/services/proxy-engine/internal/auth"
-	"github.com/francisdavid7/nexus-proxy/services/proxy-engine/internal/privacy"
 	"github.com/francisdavid7/nexus-proxy/services/proxy-engine/internal/ratelimit"
 	"github.com/francisdavid7/nexus-proxy/services/proxy-engine/internal/usage"
 )
 
 type Handler struct {
-	logger        *slog.Logger
-	authenticator *auth.Authenticator
-	usageRecorder *usage.PostgresRecorder
-	rateLimiter   *ratelimit.RedisLimiter
-	validator     *DestinationValidator
-
-	egressGuard *privacy.Guard
-	transport   http.RoundTripper
+	logger         *slog.Logger
+	authenticator  *auth.Authenticator
+	usageRecorder  *usage.PostgresRecorder
+	rateLimiter    *ratelimit.RedisLimiter
+	validator      *DestinationValidator
+	transport      *http.Transport
+	connectTimeout time.Duration
 }
 
 type countingReadCloser struct {
@@ -58,60 +55,31 @@ func NewHandler(
 	validator *DestinationValidator,
 	connectTimeout time.Duration,
 ) *Handler {
-	privacyConfig, err :=
-		privacy.ConfigFromEnv()
-
-	if err != nil {
-		logger.Error(
-			"invalid proxy privacy configuration",
-			slog.String(
-				"error",
-				err.Error(),
-			),
-		)
-
-		// Invalid security configuration must
-		// prevent the proxy from starting.
-		panic(err)
+	dialer := &net.Dialer{
+		Timeout:   connectTimeout,
+		KeepAlive: 30 * time.Second,
 	}
 
-	// Preserve the existing
-	// PROXY_CONNECT_TIMEOUT configuration unless
-	// PROXY_DIAL_TIMEOUT is explicitly supplied.
-	if strings.TrimSpace(
-		os.Getenv(
-			"PROXY_DIAL_TIMEOUT",
-		),
-	) == "" &&
-		connectTimeout > 0 {
-		privacyConfig.DialTimeout =
-			connectTimeout
+	transport := &http.Transport{
+		Proxy:                 nil,
+		DialContext:           dialer.DialContext,
+		ForceAttemptHTTP2:     false,
+		MaxIdleConns:          200,
+		MaxIdleConnsPerHost:   20,
+		IdleConnTimeout:       90 * time.Second,
+		TLSHandshakeTimeout:   10 * time.Second,
+		ExpectContinueTimeout: time.Second,
+		DisableCompression:    false,
 	}
-
-	egressGuard :=
-		privacy.NewGuard(
-			privacyConfig,
-		)
-
-	transport :=
-		privacy.NewRoundTripper(
-			egressGuard,
-		)
 
 	return &Handler{
-		logger: logger,
-
-		authenticator: authenticator,
-
-		usageRecorder: usageRecorder,
-
-		rateLimiter: rateLimiter,
-
-		validator: validator,
-
-		egressGuard: egressGuard,
-
-		transport: transport,
+		logger:         logger,
+		authenticator:  authenticator,
+		usageRecorder:  usageRecorder,
+		rateLimiter:    rateLimiter,
+		validator:      validator,
+		transport:      transport,
+		connectTimeout: connectTimeout,
 	}
 }
 
@@ -290,14 +258,10 @@ func (h *Handler) handleHTTP(
 	var requestCounter *countingReadCloser
 
 	outboundRequest :=
-		request.Clone(
-			request.Context(),
-		)
+		request.Clone(request.Context())
 
-	// Never mutate the inbound header map while
-	// preparing the upstream request.
-	outboundRequest.Header =
-		request.Header.Clone()
+	outboundRequest.RequestURI = ""
+	outboundRequest.Close = false
 
 	if request.Body != nil {
 		requestCounter = &countingReadCloser{
@@ -307,8 +271,12 @@ func (h *Handler) handleHTTP(
 		outboundRequest.Body = requestCounter
 	}
 
-	privacy.PrepareOutboundRequest(
-		outboundRequest,
+	removeHopByHopHeaders(
+		outboundRequest.Header,
+	)
+
+	removeIdentityHeaders(
+		outboundRequest.Header,
 	)
 
 	response, err :=
@@ -335,15 +303,10 @@ func (h *Handler) handleHTTP(
 			),
 		)
 
-		message, statusCode :=
-			upstreamFailureResponse(
-				err,
-			)
-
 		http.Error(
 			writer,
-			message,
-			statusCode,
+			"upstream request failed",
+			http.StatusBadGateway,
 		)
 
 		return
@@ -351,14 +314,8 @@ func (h *Handler) handleHTTP(
 
 	defer response.Body.Close()
 
-	privacy.SanitizeResponseHeaders(
-		response.Header,
-	)
-
-	copyHeaders(
-		writer.Header(),
-		response.Header,
-	)
+	removeHopByHopHeaders(response.Header)
+	copyHeaders(writer.Header(), response.Header)
 
 	writer.WriteHeader(response.StatusCode)
 
@@ -488,8 +445,12 @@ func (h *Handler) handleConnect(
 		return
 	}
 
+	dialer := &net.Dialer{
+		Timeout: h.connectTimeout,
+	}
+
 	upstreamConnection, err :=
-		h.egressGuard.DialContext(
+		dialer.DialContext(
 			request.Context(),
 			"tcp",
 			destination,
@@ -516,15 +477,10 @@ func (h *Handler) handleConnect(
 			),
 		)
 
-		message, statusCode :=
-			upstreamFailureResponse(
-				err,
-			)
-
 		http.Error(
 			writer,
-			message,
-			statusCode,
+			"unable to reach destination",
+			http.StatusBadGateway,
 		)
 
 		return
@@ -771,23 +727,49 @@ func bytesFromCounter(
 	return counter.bytesRead
 }
 
-func upstreamFailureResponse(
-	err error,
-) (string, int) {
-	if errors.Is(
-		err,
-		privacy.ErrBlockedDestination,
-	) ||
-		errors.Is(
-			err,
-			privacy.ErrDisallowedPort,
+func removeIdentityHeaders(
+	headers http.Header,
+) {
+	headers.Del("Forwarded")
+	headers.Del("Via")
+	headers.Del("X-Forwarded-For")
+	headers.Del("X-Forwarded-Host")
+	headers.Del("X-Forwarded-Proto")
+	headers.Del("X-Real-IP")
+}
+
+func removeHopByHopHeaders(
+	headers http.Header,
+) {
+	connectionHeaders :=
+		headers.Values("Connection")
+
+	for _, value := range connectionHeaders {
+		for item := range strings.SplitSeq(
+			value,
+			",",
 		) {
-		return "destination is not allowed",
-			http.StatusForbidden
+			headers.Del(
+				strings.TrimSpace(item),
+			)
+		}
 	}
 
-	return "unable to reach destination",
-		http.StatusBadGateway
+	hopByHopHeaders := []string{
+		"Connection",
+		"Keep-Alive",
+		"Proxy-Authenticate",
+		"Proxy-Authorization",
+		"Proxy-Connection",
+		"TE",
+		"Trailer",
+		"Transfer-Encoding",
+		"Upgrade",
+	}
+
+	for _, header := range hopByHopHeaders {
+		headers.Del(header)
+	}
 }
 
 func copyHeaders(
