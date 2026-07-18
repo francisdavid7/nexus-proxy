@@ -2,7 +2,9 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
@@ -20,7 +22,17 @@ import (
 	"github.com/francisdavid7/nexus-proxy/services/proxy-engine/internal/usage"
 )
 
+type managedListener struct {
+	name   string
+	server *server.Server
+	start  func() error
+}
+
 func main() {
+	os.Exit(run())
+}
+
+func run() int {
 	cfg, err := config.Load()
 	if err != nil {
 		slog.Error(
@@ -28,7 +40,7 @@ func main() {
 			slog.String("error", err.Error()),
 		)
 
-		os.Exit(1)
+		return 1
 	}
 
 	logger := logging.New(
@@ -57,7 +69,7 @@ func main() {
 			slog.String("error", err.Error()),
 		)
 
-		os.Exit(1)
+		return 1
 	}
 
 	defer databasePool.Close()
@@ -70,7 +82,7 @@ func main() {
 			slog.String("error", err.Error()),
 		)
 
-		os.Exit(1)
+		return 1
 	}
 
 	logger.Info("PostgreSQL connection established")
@@ -100,7 +112,7 @@ func main() {
 			slog.String("error", err.Error()),
 		)
 
-		os.Exit(1)
+		return 1
 	}
 
 	logger.Info("Redis connection established")
@@ -138,7 +150,7 @@ func main() {
 			slog.String("error", err.Error()),
 		)
 
-		os.Exit(1)
+		return 1
 	}
 
 	logger.Info("usage recorder initialized")
@@ -161,20 +173,80 @@ func main() {
 		cfg.ConnectTimeout,
 	)
 
-	proxyServer := server.New(
-		logger,
-		cfg.Address(),
-		proxyHandler,
-		cfg.ReadTimeout,
-		cfg.WriteTimeout,
-		cfg.IdleTimeout,
+	rootHandler := healthAwareHandler(proxyHandler)
+
+	listeners := make(
+		[]managedListener,
+		0,
+		2,
 	)
 
-	serverErrors := make(chan error, 1)
+	if cfg.PlainEnabled {
+		plainServer := server.New(
+			logger,
+			cfg.Address(),
+			rootHandler,
+			cfg.ReadTimeout,
+			cfg.WriteTimeout,
+			cfg.IdleTimeout,
+		)
 
-	go func() {
-		serverErrors <- proxyServer.Start()
-	}()
+		listeners = append(
+			listeners,
+			managedListener{
+				name:   "plaintext",
+				server: plainServer,
+				start:  plainServer.Start,
+			},
+		)
+	}
+
+	if cfg.TLSEnabled {
+		tlsServer := server.New(
+			logger,
+			cfg.TLSAddress(),
+			rootHandler,
+			cfg.ReadTimeout,
+			cfg.WriteTimeout,
+			cfg.IdleTimeout,
+		)
+
+		listeners = append(
+			listeners,
+			managedListener{
+				name:   "tls",
+				server: tlsServer,
+				start: func() error {
+					return tlsServer.StartTLS(
+						cfg.TLSCertFile,
+						cfg.TLSKeyFile,
+					)
+				},
+			},
+		)
+	}
+
+	serverErrors := make(
+		chan error,
+		len(listeners),
+	)
+
+	for _, configuredListener := range listeners {
+		listener := configuredListener
+
+		go func() {
+			err := listener.start()
+			if err != nil {
+				err = fmt.Errorf(
+					"%s listener: %w",
+					listener.name,
+					err,
+				)
+			}
+
+			serverErrors <- err
+		}()
+	}
 
 	shutdownSignals := make(chan os.Signal, 1)
 
@@ -183,6 +255,10 @@ func main() {
 		syscall.SIGINT,
 		syscall.SIGTERM,
 	)
+
+	defer signal.Stop(shutdownSignals)
+
+	exitCode := 0
 
 	select {
 	case signalValue := <-shutdownSignals:
@@ -204,7 +280,7 @@ func main() {
 				),
 			)
 
-			os.Exit(1)
+			exitCode = 1
 		}
 	}
 
@@ -216,16 +292,62 @@ func main() {
 
 	defer cancelShutdown()
 
-	if err := proxyServer.Shutdown(
-		shutdownContext,
-	); err != nil {
-		logger.Error(
-			"graceful shutdown failed",
-			slog.String("error", err.Error()),
-		)
+	for _, listener := range listeners {
+		if err := listener.server.Shutdown(
+			shutdownContext,
+		); err != nil {
+			logger.Error(
+				"graceful shutdown failed",
+				slog.String("listener", listener.name),
+				slog.String("error", err.Error()),
+			)
 
-		os.Exit(1)
+			exitCode = 1
+		}
 	}
 
-	logger.Info("proxy engine stopped successfully")
+	if exitCode == 0 {
+		logger.Info("proxy engine stopped successfully")
+	}
+
+	return exitCode
+}
+
+func healthAwareHandler(
+	proxyHandler http.Handler,
+) http.Handler {
+	return http.HandlerFunc(
+		func(
+			writer http.ResponseWriter,
+			request *http.Request,
+		) {
+			if request.Method == http.MethodGet &&
+				request.URL != nil &&
+				request.URL.Host == "" &&
+				request.URL.Path == "/healthz" {
+				writer.Header().Set(
+					"Cache-Control",
+					"no-store",
+				)
+
+				writer.Header().Set(
+					"Content-Type",
+					"text/plain; charset=utf-8",
+				)
+
+				writer.WriteHeader(http.StatusOK)
+
+				_, _ = writer.Write(
+					[]byte("ok\n"),
+				)
+
+				return
+			}
+
+			proxyHandler.ServeHTTP(
+				writer,
+				request,
+			)
+		},
+	)
 }

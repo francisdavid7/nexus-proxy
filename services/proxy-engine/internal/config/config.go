@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"net"
 	"os"
 	"strconv"
 	"time"
@@ -13,6 +14,12 @@ type Config struct {
 	NodeID           string
 	Host             string
 	Port             string
+	PlainEnabled     bool
+	TLSHost          string
+	TLSPort          string
+	TLSEnabled       bool
+	TLSCertFile      string
+	TLSKeyFile       string
 	DatabaseURL      string
 	RedisAddress     string
 	RedisPassword    string
@@ -27,12 +34,20 @@ type Config struct {
 }
 
 func Load() (Config, error) {
+	host := getEnv("PROXY_HOST", "0.0.0.0")
+
 	cfg := Config{
 		Environment:      getEnv("APP_ENV", "development"),
 		LogLevel:         getEnv("LOG_LEVEL", "info"),
 		NodeID:           getEnv("NODE_ID", "local-node-01"),
-		Host:             getEnv("PROXY_HOST", "0.0.0.0"),
+		Host:             host,
 		Port:             getEnv("PROXY_PORT", "8080"),
+		PlainEnabled:     getBool("PROXY_PLAIN_ENABLED", true),
+		TLSHost:          getEnv("PROXY_TLS_HOST", host),
+		TLSPort:          getEnv("PROXY_TLS_PORT", "8443"),
+		TLSEnabled:       getBool("PROXY_TLS_ENABLED", false),
+		TLSCertFile:      getEnv("PROXY_TLS_CERT_FILE", "/run/nexus-tls/tls.crt"),
+		TLSKeyFile:       getEnv("PROXY_TLS_KEY_FILE", "/run/nexus-tls/tls.key"),
 		DatabaseURL:      os.Getenv("DATABASE_URL"),
 		RedisAddress:     getEnv("REDIS_ADDR", "localhost:6379"),
 		RedisPassword:    os.Getenv("REDIS_PASSWORD"),
@@ -62,11 +77,53 @@ func Load() (Config, error) {
 		)
 	}
 
+	if !cfg.PlainEnabled && !cfg.TLSEnabled {
+		return Config{}, fmt.Errorf(
+			"at least one proxy listener must be enabled",
+		)
+	}
+
+	if cfg.PlainEnabled && cfg.Port == "" {
+		return Config{}, fmt.Errorf(
+			"PROXY_PORT is required when the plaintext listener is enabled",
+		)
+	}
+
+	if cfg.TLSEnabled {
+		if cfg.TLSPort == "" {
+			return Config{}, fmt.Errorf(
+				"PROXY_TLS_PORT is required when TLS is enabled",
+			)
+		}
+
+		if cfg.TLSCertFile == "" {
+			return Config{}, fmt.Errorf(
+				"PROXY_TLS_CERT_FILE is required when TLS is enabled",
+			)
+		}
+
+		if cfg.TLSKeyFile == "" {
+			return Config{}, fmt.Errorf(
+				"PROXY_TLS_KEY_FILE is required when TLS is enabled",
+			)
+		}
+
+		if cfg.PlainEnabled && cfg.Address() == cfg.TLSAddress() {
+			return Config{}, fmt.Errorf(
+				"plaintext and TLS listeners cannot use the same address",
+			)
+		}
+	}
+
 	return cfg, nil
 }
 
 func (c Config) Address() string {
-	return c.Host + ":" + c.Port
+	return net.JoinHostPort(c.Host, c.Port)
+}
+
+func (c Config) TLSAddress() string {
+	return net.JoinHostPort(c.TLSHost, c.TLSPort)
 }
 
 func getEnv(key string, fallback string) string {

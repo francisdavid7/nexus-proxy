@@ -20,6 +20,7 @@ FROM alpine:3.22
 
 RUN apk add --no-cache \
     ca-certificates \
+    su-exec \
     tzdata \
     && addgroup -S nexus \
     && adduser -S nexus -G nexus
@@ -27,9 +28,12 @@ RUN apk add --no-cache \
 WORKDIR /app
 
 COPY --from=builder /out/nexus-proxy /usr/local/bin/nexus-proxy
+COPY docker-entrypoint.sh /usr/local/bin/nexus-proxy-entrypoint
 
-USER nexus
+RUN chmod 0755 \
+    /usr/local/bin/nexus-proxy \
+    /usr/local/bin/nexus-proxy-entrypoint
 
-EXPOSE 8080
+EXPOSE 8080 8443
 
-ENTRYPOINT ["nexus-proxy"]
+ENTRYPOINT ["nexus-proxy-entrypoint"]

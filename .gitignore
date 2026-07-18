@@ -24,3 +24,9 @@ apps/dashboard/.env.e2e
 apps/dashboard/playwright/.auth/
 apps/dashboard/playwright-report/
 apps/dashboard/test-results/
+
+infrastructure/docker/.nexus-auth.env
+
+infrastructure/docker/compose.auth.final.yml
+infrastructure/docker/certs/tls.key
+.tls-backup/

@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"log/slog"
 	"net/http"
@@ -31,27 +32,57 @@ func New(
 			WriteTimeout:      writeTimeout,
 			IdleTimeout:       idleTimeout,
 			MaxHeaderBytes:    1 << 20,
+			TLSConfig: &tls.Config{
+				MinVersion: tls.VersionTLS12,
+				NextProtos: []string{"http/1.1"},
+			},
 		},
 	}
 }
 
 func (s *Server) Start() error {
 	s.logger.Info(
-		"proxy engine started",
+		"proxy listener started",
+		slog.String("address", s.httpServer.Addr),
+		slog.String("transport", "plaintext"),
+	)
+
+	return normalizeServerError(
+		s.httpServer.ListenAndServe(),
+	)
+}
+
+func (s *Server) StartTLS(
+	certFile string,
+	keyFile string,
+) error {
+	s.logger.Info(
+		"proxy listener started",
+		slog.String("address", s.httpServer.Addr),
+		slog.String("transport", "tls"),
+	)
+
+	return normalizeServerError(
+		s.httpServer.ListenAndServeTLS(
+			certFile,
+			keyFile,
+		),
+	)
+}
+
+func (s *Server) Shutdown(ctx context.Context) error {
+	s.logger.Info(
+		"proxy listener shutting down",
 		slog.String("address", s.httpServer.Addr),
 	)
 
-	err := s.httpServer.ListenAndServe()
+	return s.httpServer.Shutdown(ctx)
+}
 
+func normalizeServerError(err error) error {
 	if errors.Is(err, http.ErrServerClosed) {
 		return nil
 	}
 
 	return err
-}
-
-func (s *Server) Shutdown(ctx context.Context) error {
-	s.logger.Info("proxy engine shutting down")
-
-	return s.httpServer.Shutdown(ctx)
 }

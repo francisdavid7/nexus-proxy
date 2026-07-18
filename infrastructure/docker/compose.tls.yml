@@ -1,0 +1,28 @@
+services:
+  proxy-engine:
+    environment:
+      PROXY_PLAIN_ENABLED: "true"
+      PROXY_TLS_ENABLED: "true"
+      PROXY_TLS_HOST: "0.0.0.0"
+      PROXY_TLS_PORT: "8443"
+      PROXY_TLS_CERT_SOURCE: "/tls-source/tls.crt"
+      PROXY_TLS_KEY_SOURCE: "/tls-source/tls.key"
+      PROXY_TLS_CERT_FILE: "/run/nexus-tls/tls.crt"
+      PROXY_TLS_KEY_FILE: "/run/nexus-tls/tls.key"
+
+    ports:
+      - "8443:8443"
+
+    volumes:
+      - ./certs:/tls-source:ro
+
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "wget -qO- http://127.0.0.1:8080/healthz >/dev/null 2>&1",
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
