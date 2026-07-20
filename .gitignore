@@ -30,3 +30,5 @@ infrastructure/docker/.nexus-auth.env
 infrastructure/docker/compose.auth.final.yml
 infrastructure/docker/certs/tls.key
 .tls-backup/
+
+.nexus-cloud.env
