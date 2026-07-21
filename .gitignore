@@ -32,3 +32,4 @@ infrastructure/docker/certs/tls.key
 .tls-backup/
 
 .nexus-cloud.env
+.cloud-backup/

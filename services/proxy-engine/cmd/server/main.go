@@ -10,16 +10,15 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/redis/go-redis/v9"
-
 	"github.com/francisdavid7/nexus-proxy/services/proxy-engine/internal/auth"
 	"github.com/francisdavid7/nexus-proxy/services/proxy-engine/internal/config"
 	"github.com/francisdavid7/nexus-proxy/services/proxy-engine/internal/logging"
 	"github.com/francisdavid7/nexus-proxy/services/proxy-engine/internal/proxy"
 	"github.com/francisdavid7/nexus-proxy/services/proxy-engine/internal/ratelimit"
+	"github.com/francisdavid7/nexus-proxy/services/proxy-engine/internal/redisclient"
 	"github.com/francisdavid7/nexus-proxy/services/proxy-engine/internal/server"
 	"github.com/francisdavid7/nexus-proxy/services/proxy-engine/internal/usage"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type managedListener struct {
@@ -87,13 +86,23 @@ func run() int {
 
 	logger.Info("PostgreSQL connection established")
 
-	redisClient := redis.NewClient(
-		&redis.Options{
-			Addr:     cfg.RedisAddress,
+	redisClient, err := redisclient.New(
+		redisclient.Config{
+			URL:      cfg.RedisURL,
+			Address:  cfg.RedisAddress,
 			Password: cfg.RedisPassword,
-			DB:       cfg.RedisDatabase,
+			Database: cfg.RedisDatabase,
 		},
 	)
+
+	if err != nil {
+		logger.Error(
+			"Redis configuration failed",
+			slog.String("error", err.Error()),
+		)
+
+		return 1
+	}
 
 	defer func() {
 		if err := redisClient.Close(); err != nil {

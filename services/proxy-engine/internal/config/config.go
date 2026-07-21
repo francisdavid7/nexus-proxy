@@ -21,6 +21,7 @@ type Config struct {
 	TLSCertFile      string
 	TLSKeyFile       string
 	DatabaseURL      string
+	RedisURL         string
 	RedisAddress     string
 	RedisPassword    string
 	RedisDatabase    int
@@ -49,6 +50,7 @@ func Load() (Config, error) {
 		TLSCertFile:      getEnv("PROXY_TLS_CERT_FILE", "/run/nexus-tls/tls.crt"),
 		TLSKeyFile:       getEnv("PROXY_TLS_KEY_FILE", "/run/nexus-tls/tls.key"),
 		DatabaseURL:      os.Getenv("DATABASE_URL"),
+		RedisURL:         os.Getenv("REDIS_URL"),
 		RedisAddress:     getEnv("REDIS_ADDR", "localhost:6379"),
 		RedisPassword:    os.Getenv("REDIS_PASSWORD"),
 		RedisDatabase:    getInt("REDIS_DB", 0),
