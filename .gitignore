@@ -35,3 +35,8 @@ infrastructure/docker/certs/tls.key
 .cloud-backup/
 
 .migration-backups/
+
+# AWS production deployment secrets
+infrastructure/aws/proxy-engine.env
+infrastructure/aws/certs/
+infrastructure/aws/*.tar.gz
