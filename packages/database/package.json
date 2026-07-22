@@ -10,7 +10,8 @@
     "db:deploy": "prisma migrate deploy",
     "db:studio": "prisma studio",
     "typecheck": "tsc --noEmit",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts",
+    "build": "prisma generate"
   },
   "exports": {
     ".": {

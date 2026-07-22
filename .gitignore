@@ -40,3 +40,4 @@ infrastructure/docker/certs/tls.key
 infrastructure/aws/proxy-engine.env
 infrastructure/aws/certs/
 infrastructure/aws/*.tar.gz
+.vercel-production.env

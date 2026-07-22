@@ -1,21 +1,46 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "tasks": {
-    
     "dev": {
       "cache": false,
       "persistent": true
     },
     "build": {
-      "dependsOn": ["^build"],
-      "outputs": [".next/**", "dist/**", "bin/**"]
+      "dependsOn": [
+        "^build"
+      ],
+      "outputs": [
+        ".next/**",
+        "dist/**",
+        "bin/**",
+        "src/generated/**"
+      ],
+      "env": [
+        "AUDIT_IP_PEPPER",
+        "COOKIE_SECURE",
+        "CREDENTIAL_PEPPER",
+        "DATABASE_URL",
+        "NODE_DEGRADED_PERCENT_THRESHOLD",
+        "NODE_HEARTBEAT_MAX_SKEW_SECONDS",
+        "NODE_NONCE_TTL_SECONDS",
+        "NODE_STALE_AFTER_SECONDS",
+        "REDIS_URL",
+        "SESSION_COOKIE_NAME",
+        "SESSION_TTL_DAYS"
+      ]
     },
     "lint": {
-      "dependsOn": ["^lint"]
+      "dependsOn": [
+        "^lint"
+      ]
     },
     "test": {
-      "dependsOn": ["^test"],
-      "outputs": ["coverage/**"]
+      "dependsOn": [
+        "^test"
+      ],
+      "outputs": [
+        "coverage/**"
+      ]
     }
   }
 }
