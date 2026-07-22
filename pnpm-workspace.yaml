@@ -5,4 +5,7 @@ packages:
 
 allowBuilds:
   "@prisma/engines": true
-  "sharp": true
+  esbuild: true
+  prisma: true
+  sharp: true
+  unrs-resolver: true
